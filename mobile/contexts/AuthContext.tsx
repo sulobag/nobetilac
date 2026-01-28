@@ -36,6 +36,12 @@ interface AuthContextType {
   becomeCourier: (
     vehicleType: "motorcycle" | "car" | "bicycle" | "scooter",
   ) => Promise<{ error: Error | null }>;
+  resetPassword: (email: string) => Promise<{ error: Error | null }>;
+  updatePassword: (
+    email: string,
+    token: string,
+    newPassword: string,
+  ) => Promise<{ error: Error | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -349,6 +355,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const resetPassword = async (email: string) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: undefined,
+      });
+
+      if (error) {
+        if (error.message.includes("User not found")) {
+          throw new Error("Bu email adresi ile kayıtlı kullanıcı bulunamadı");
+        }
+        throw error;
+      }
+
+      return { error: null };
+    } catch (error) {
+      console.error("Şifre sıfırlama hatası:", error);
+      return { error: error as Error };
+    }
+  };
+
+  const updatePassword = async (
+    email: string,
+    token: string,
+    newPassword: string,
+  ) => {
+    try {
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        email,
+        token,
+        type: "recovery",
+      });
+
+      if (verifyError) throw verifyError;
+
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (updateError) throw updateError;
+
+      await supabase.auth.signOut();
+
+      return { error: null };
+    } catch (error) {
+      console.error("Şifre güncelleme hatası:", error);
+      return { error: error as Error };
+    }
+  };
+
   const value = {
     session,
     user,
@@ -364,6 +419,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     deleteAccount,
     checkUserAddresses,
     becomeCourier,
+    resetPassword,
+    updatePassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

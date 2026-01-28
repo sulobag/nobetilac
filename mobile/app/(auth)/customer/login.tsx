@@ -91,6 +91,12 @@ export default function CustomerLogin() {
             secureTextEntry
             autoCapitalize="none"
           />
+          <TouchableOpacity
+            onPress={() => router.push("/(auth)/forgot-password")}
+            className="mt-2 self-end"
+          >
+            <Text className="text-blue-600 text-sm">Şifremi Unuttum?</Text>
+          </TouchableOpacity>
         </View>
 
         <TouchableOpacity

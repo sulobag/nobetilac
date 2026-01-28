@@ -65,6 +65,12 @@ export default function CourierLogin() {
             secureTextEntry
             autoCapitalize="none"
           />
+          <TouchableOpacity
+            onPress={() => router.push("/(auth)/forgot-password")}
+            className="mt-2 self-end"
+          >
+            <Text className="text-green-600 text-sm">Şifremi Unuttum?</Text>
+          </TouchableOpacity>
         </View>
 
         <TouchableOpacity
