@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import * as Location from 'expo-location';
+import { useState } from "react";
+import * as Location from "expo-location";
 
 interface LocationCoords {
   latitude: number;
@@ -25,13 +25,14 @@ export function useLocation(): UseLocationReturn {
   const requestPermission = async (): Promise<boolean> => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setError('Konum izni verilmedi');
+      if (status !== "granted") {
+        setError("Konum izni verilmedi");
         return false;
       }
       return true;
-    } catch {
-      setError('Konum izni alınırken hata oluştu');
+    } catch (err) {
+      console.error("Permission error:", err);
+      setError("Konum izni alınırken hata oluştu");
       return false;
     }
   };
@@ -62,15 +63,15 @@ export function useLocation(): UseLocationReturn {
       const addressText = await getAddressFromCoords(coords);
       setAddress(addressText);
     } catch (err) {
-      setError('Konum alınırken hata oluştu');
-      console.error('Location error:', err);
+      setError("Konum alınırken hata oluştu");
+      console.error("Location error:", err);
     } finally {
       setLoading(false);
     }
   };
 
   const getAddressFromCoords = async (
-    coords: LocationCoords
+    coords: LocationCoords,
   ): Promise<string | null> => {
     try {
       const [result] = await Location.reverseGeocodeAsync(coords);
@@ -81,11 +82,11 @@ export function useLocation(): UseLocationReturn {
           result.city,
           result.country,
         ].filter(Boolean);
-        return parts.join(', ');
+        return parts.join(", ");
       }
       return null;
     } catch (err) {
-      console.error('Reverse geocode error:', err);
+      console.error("Reverse geocode error:", err);
       return null;
     }
   };

@@ -7,10 +7,10 @@ export default function VerifyEmail() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { verifyOTP, resendOTP } = useAuth();
-  
+
   const email = params.email as string;
-  const userType = params.userType as 'customer' | 'courier';
-  
+  const userType = params.userType as "customer" | "courier";
+
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
@@ -33,11 +33,14 @@ export default function VerifyEmail() {
     }
 
     setLoading(true);
-    const { error, session } = await verifyOTP(email, otp) as any;
+    const { error, session } = await verifyOTP(email, otp);
     setLoading(false);
 
     if (error) {
-      Alert.alert("Doğrulama Hatası", "Kod geçersiz veya süresi dolmuş. Lütfen tekrar deneyin.");
+      Alert.alert(
+        "Doğrulama Hatası",
+        "Kod geçersiz veya süresi dolmuş. Lütfen tekrar deneyin.",
+      );
     } else {
       Alert.alert(
         "Başarılı!",
@@ -49,7 +52,7 @@ export default function VerifyEmail() {
               router.replace("/");
             },
           },
-        ]
+        ],
       );
     }
   };
@@ -62,7 +65,10 @@ export default function VerifyEmail() {
     setResending(false);
 
     if (error) {
-      Alert.alert("Hata", "Kod tekrar gönderilemedi. Lütfen daha sonra tekrar deneyin.");
+      Alert.alert(
+        "Hata",
+        "Kod tekrar gönderilemedi. Lütfen daha sonra tekrar deneyin.",
+      );
     } else {
       Alert.alert("Başarılı", "Yeni kod email adresinize gönderildi.");
       setCountdown(60);
@@ -70,7 +76,7 @@ export default function VerifyEmail() {
     }
   };
 
-  const color = userType === 'customer' ? 'blue' : 'green';
+  const color = userType === "customer" ? "blue" : "green";
 
   return (
     <View className="flex-1 bg-white p-6">
@@ -79,7 +85,9 @@ export default function VerifyEmail() {
         <TouchableOpacity onPress={() => router.back()} className="mb-4">
           <Text className={`text-${color}-600 text-base`}>← Geri</Text>
         </TouchableOpacity>
-        <Text className="text-3xl font-bold text-gray-900">Email Doğrulama</Text>
+        <Text className="text-3xl font-bold text-gray-900">
+          Email Doğrulama
+        </Text>
         <Text className="text-gray-600 mt-2">
           {email} adresine gönderilen 6 haneli kodu girin
         </Text>
@@ -95,7 +103,7 @@ export default function VerifyEmail() {
             className="border border-gray-300 rounded-xl px-4 py-3 text-center text-2xl font-bold tracking-widest"
             placeholder="000000"
             value={otp}
-            onChangeText={(text) => setOtp(text.replace(/[^0-9]/g, ''))}
+            onChangeText={(text) => setOtp(text.replace(/[^0-9]/g, ""))}
             keyboardType="number-pad"
             maxLength={6}
             autoFocus
@@ -106,8 +114,8 @@ export default function VerifyEmail() {
           onPress={handleVerify}
           disabled={loading || otp.length !== 6}
           className={`${
-            userType === 'customer' ? 'bg-blue-600' : 'bg-green-600'
-          } rounded-xl py-4 mt-6 ${loading || otp.length !== 6 ? 'opacity-50' : ''}`}
+            userType === "customer" ? "bg-blue-600" : "bg-green-600"
+          } rounded-xl py-4 mt-6 ${loading || otp.length !== 6 ? "opacity-50" : ""}`}
         >
           <Text className="text-white text-center text-lg font-semibold">
             {loading ? "Doğrulanıyor..." : "Doğrula"}
@@ -127,7 +135,7 @@ export default function VerifyEmail() {
             >
               <Text
                 className={`text-center font-semibold ${
-                  userType === 'customer' ? 'text-blue-600' : 'text-green-600'
+                  userType === "customer" ? "text-blue-600" : "text-green-600"
                 }`}
               >
                 {resending ? "Gönderiliyor..." : "Tekrar Gönder"}

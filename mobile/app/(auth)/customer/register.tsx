@@ -1,4 +1,11 @@
-import { View, Text, TextInput, TouchableOpacity, Alert, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  ScrollView,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -6,7 +13,7 @@ import { validateEmail, validatePhone } from "@/utils/helpers";
 
 export default function CustomerRegister() {
   const router = useRouter();
-  const { signUp } = useAuth();
+  const { signUp, signOut } = useAuth();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -27,7 +34,10 @@ export default function CustomerRegister() {
     }
 
     if (!validatePhone(phone)) {
-      Alert.alert("Hata", "Telefon numarası 05XX XXX XX XX formatında olmalıdır");
+      Alert.alert(
+        "Hata",
+        "Telefon numarası 05XX XXX XX XX formatında olmalıdır",
+      );
       return;
     }
 
@@ -42,36 +52,52 @@ export default function CustomerRegister() {
     }
 
     setLoading(true);
-    const { error, needsVerification } = await signUp(email, password, phone, fullName, "customer");
-    setLoading(false);
+    const { error, needsVerification } = await signUp(
+      email,
+      password,
+      phone,
+      fullName,
+      "customer",
+    );
 
     if (error) {
+      setLoading(false);
       // Rate limit hatası için özel mesaj
-      if (error.message.includes('rate limit')) {
+      if (error.message.includes("rate limit")) {
         Alert.alert(
-          "Çok Fazla Deneme", 
-          "Çok fazla kayıt denemesi yaptınız. Lütfen 5-10 dakika bekleyip tekrar deneyin."
+          "Çok Fazla Deneme",
+          "Çok fazla kayıt denemesi yaptınız. Lütfen 5-10 dakika bekleyip tekrar deneyin.",
         );
       } else {
         Alert.alert("Kayıt Hatası", error.message);
       }
-    } else if (needsVerification) {
+      return;
+    }
+
+    if (needsVerification) {
+      setLoading(false);
       Alert.alert(
         "Email Doğrulama",
         `${email} adresinize bir doğrulama kodu gönderdik. Lütfen email'inizi kontrol edin.`,
         [
           {
             text: "Tamam",
-            onPress: () => router.push({
-              pathname: "/(auth)/verify-email",
-              params: { email, userType: 'customer' }
-            }),
+            onPress: () =>
+              router.push({
+                pathname: "/(auth)/verify-email",
+                params: { email, userType: "customer" },
+              }),
           },
-        ]
+        ],
       );
     } else {
-      Alert.alert("Başarılı", "Hesabınız oluşturuldu! Giriş yapabilirsiniz.", [
-        { text: "Tamam", onPress: () => router.replace("/(auth)/customer/login") },
+      // Email verification yok, direkt session oluştu
+      // Session'ı temizle ve login ekranına yönlendir
+      await signOut();
+      setLoading(false);
+
+      Alert.alert("Başarılı", "Hesabınız oluşturuldu! Giriş yapın.", [
+        { text: "Tamam", onPress: () => router.push("/(auth)/customer/login") },
       ]);
     }
   };
@@ -84,14 +110,18 @@ export default function CustomerRegister() {
           <TouchableOpacity onPress={() => router.back()} className="mb-4">
             <Text className="text-blue-600 text-base">← Geri</Text>
           </TouchableOpacity>
-          <Text className="text-3xl font-bold text-gray-900">Kullanıcı Kayıt</Text>
+          <Text className="text-3xl font-bold text-gray-900">
+            Kullanıcı Kayıt
+          </Text>
           <Text className="text-gray-600 mt-2">Yeni hesap oluşturun</Text>
         </View>
 
         {/* Form */}
         <View className="space-y-4">
           <View>
-            <Text className="text-sm font-medium text-gray-700 mb-2">Ad Soyad</Text>
+            <Text className="text-sm font-medium text-gray-700 mb-2">
+              Ad Soyad
+            </Text>
             <TextInput
               className="border border-gray-300 rounded-xl px-4 py-3 text-base"
               placeholder="Ali Yılmaz"
@@ -102,7 +132,9 @@ export default function CustomerRegister() {
           </View>
 
           <View>
-            <Text className="text-sm font-medium text-gray-700 mb-2">Email</Text>
+            <Text className="text-sm font-medium text-gray-700 mb-2">
+              Email
+            </Text>
             <TextInput
               className="border border-gray-300 rounded-xl px-4 py-3 text-base"
               placeholder="ornek@email.com"
@@ -115,7 +147,9 @@ export default function CustomerRegister() {
           </View>
 
           <View>
-            <Text className="text-sm font-medium text-gray-700 mb-2">Telefon</Text>
+            <Text className="text-sm font-medium text-gray-700 mb-2">
+              Telefon
+            </Text>
             <TextInput
               className="border border-gray-300 rounded-xl px-4 py-3 text-base"
               placeholder="05XX XXX XX XX"
@@ -127,7 +161,9 @@ export default function CustomerRegister() {
           </View>
 
           <View>
-            <Text className="text-sm font-medium text-gray-700 mb-2">Şifre</Text>
+            <Text className="text-sm font-medium text-gray-700 mb-2">
+              Şifre
+            </Text>
             <TextInput
               className="border border-gray-300 rounded-xl px-4 py-3 text-base"
               placeholder="En az 6 karakter"
@@ -139,7 +175,9 @@ export default function CustomerRegister() {
           </View>
 
           <View>
-            <Text className="text-sm font-medium text-gray-700 mb-2">Şifre Tekrar</Text>
+            <Text className="text-sm font-medium text-gray-700 mb-2">
+              Şifre Tekrar
+            </Text>
             <TextInput
               className="border border-gray-300 rounded-xl px-4 py-3 text-base"
               placeholder="Şifrenizi tekrar girin"

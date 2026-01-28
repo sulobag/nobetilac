@@ -27,7 +27,9 @@ export default function CustomerHome() {
         <Text className="text-3xl font-bold text-gray-900">
           Merhaba, {profile?.full_name}
         </Text>
-        <Text className="text-gray-600 mt-2">Nöbet İlaç&apos;a hoş geldiniz</Text>
+        <Text className="text-gray-600 mt-2">
+          Nöbet İlaç&apos;a hoş geldiniz
+        </Text>
       </View>
 
       {/* Quick Actions */}
@@ -86,7 +88,7 @@ export default function CustomerHome() {
       <View className="mt-8 bg-gray-50 rounded-lg p-4">
         <Text className="text-xs text-gray-500">Email: {user?.email}</Text>
         <Text className="text-xs text-gray-500">
-          Role: {profile?.role || "N/A"}
+          Role: {profile?.role?.join(", ") || "N/A"}
         </Text>
       </View>
     </View>

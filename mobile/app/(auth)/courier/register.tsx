@@ -11,10 +11,12 @@ import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { validateEmail, validatePhone } from "@/utils/helpers";
 import { VEHICLE_TYPE_LABELS } from "@/lib/constants";
+import { supabase } from "@/lib/supabase";
+import { becomeCourier } from "@/contexts/becomeCourierHelper";
 
 export default function CourierRegister() {
   const router = useRouter();
-  const { signUp } = useAuth();
+  const { signUp, signIn, signOut } = useAuth();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -25,12 +27,63 @@ export default function CourierRegister() {
   >(null);
   const [loading, setLoading] = useState(false);
 
-  const vehicleTypes: Array<"motorcycle" | "car" | "bicycle" | "scooter"> = [
+  const vehicleTypes: ("motorcycle" | "car" | "bicycle" | "scooter")[] = [
     "motorcycle",
     "car",
     "bicycle",
     "scooter",
   ];
+
+  const handleBecomeCourier = async () => {
+    // Mevcut kullanıcı olarak giriş yap ve kurye yap
+    setLoading(true);
+
+    // Giriş yap
+    const { error: loginError } = await signIn(email, password);
+
+    if (loginError) {
+      setLoading(false);
+      Alert.alert("Giriş Hatası", "Şifreniz hatalı. Lütfen tekrar deneyin.");
+      return;
+    }
+
+    // Kullanıcı ID'sini al
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      setLoading(false);
+      Alert.alert("Hata", "Kullanıcı bilgisi alınamadı");
+      return;
+    }
+
+    // Kurye yap
+    const { error: courierError } = await becomeCourier({
+      userId: user.id,
+      vehicleType: vehicleType!,
+    });
+
+    if (courierError) {
+      setLoading(false);
+      Alert.alert("Hata", courierError.message);
+      return;
+    }
+
+    // Başarılı - çıkış yap ve login ekranına yönlendir
+    await signOut();
+    setLoading(false);
+
+    Alert.alert(
+      "Başarılı",
+      "Kurye hesabınız oluşturuldu! Kurye girişinden giriş yapabilirsiniz.",
+      [
+        {
+          text: "Tamam",
+          onPress: () => router.push("/(auth)/courier/login"),
+        },
+      ],
+    );
+  };
 
   const handleRegister = async () => {
     // Validasyon
@@ -50,7 +103,10 @@ export default function CourierRegister() {
     }
 
     if (!validatePhone(phone)) {
-      Alert.alert("Hata", "Telefon numarası 05XX XXX XX XX formatında olmalıdır");
+      Alert.alert(
+        "Hata",
+        "Telefon numarası 05XX XXX XX XX formatında olmalıdır",
+      );
       return;
     }
 
@@ -71,45 +127,103 @@ export default function CourierRegister() {
       phone,
       fullName,
       "courier",
-      vehicleType
+      vehicleType,
     );
-    setLoading(false);
 
     if (error) {
+      setLoading(false);
       // Rate limit hatası için özel mesaj
-      if (error.message.includes('rate limit')) {
+      if (error.message.includes("rate limit")) {
         Alert.alert(
-          "Çok Fazla Deneme", 
-          "Çok fazla kayıt denemesi yaptınız. Lütfen 5-10 dakika bekleyip tekrar deneyin."
+          "Çok Fazla Deneme",
+          "Çok fazla kayıt denemesi yaptınız. Lütfen 5-10 dakika bekleyip tekrar deneyin.",
         );
-      } else {
-        Alert.alert("Kayıt Hatası", error.message);
+        return;
       }
-    } else if (needsVerification) {
+
+      // Email veya telefon kullanılıyor hatası - kurye olma seçeneği sun
+      if (
+        (error.message.includes("email") &&
+          error.message.includes("kullanılıyor")) ||
+        (error.message.includes("telefon") &&
+          error.message.includes("kullanılıyor")) ||
+        error.message.includes("kayıtlı")
+      ) {
+        // Kullanıcının zaten kurye olup olmadığını kontrol et
+        const { data: userData } = (await supabase
+          .from("users")
+          .select("role")
+          .eq("email", email)
+          .single()) as any;
+
+        const userRoles = userData?.role as
+          | ("customer" | "courier" | "admin")[]
+          | undefined;
+        if (userData && userRoles?.includes("courier")) {
+          Alert.alert(
+            "Zaten Kayıtlı",
+            "Bu email ile zaten kurye hesabınız mevcut. Giriş yapabilirsiniz.",
+            [
+              {
+                text: "Giriş Yap",
+                onPress: () => router.replace("/(auth)/courier/login"),
+              },
+            ],
+          );
+          return;
+        }
+
+        // Müşteri olarak kayıtlı, kurye olma seçeneği sun
+        Alert.alert(
+          "Mevcut Hesap Bulundu",
+          "Bu bilgilerle müşteri hesabınız mevcut. Mevcut hesabınızı kullanarak kurye olmak ister misiniz?",
+          [
+            {
+              text: "İptal",
+              style: "cancel",
+            },
+            {
+              text: "Evet, Kurye Ol",
+              onPress: handleBecomeCourier,
+            },
+          ],
+        );
+        return;
+      }
+
+      // Diğer hatalar
+      Alert.alert("Kayıt Hatası", error.message);
+      return;
+    }
+
+    if (needsVerification) {
+      setLoading(false);
       Alert.alert(
         "Email Doğrulama",
         `${email} adresinize bir doğrulama kodu gönderdik. Lütfen email'inizi kontrol edin.`,
         [
           {
             text: "Tamam",
-            onPress: () => router.push({
-              pathname: "/(auth)/verify-email",
-              params: { email, userType: 'courier' }
-            }),
+            onPress: () =>
+              router.push({
+                pathname: "/(auth)/verify-email",
+                params: { email, userType: "courier" },
+              }),
           },
-        ]
+        ],
       );
     } else {
-      Alert.alert(
-        "Başarılı",
-        "Kurye hesabınız oluşturuldu! Giriş yapabilirsiniz.",
-        [
-          {
-            text: "Tamam",
-            onPress: () => router.replace("/(auth)/courier/login"),
-          },
-        ]
-      );
+      // Email verification yok, direkt session oluştu
+      // Session'ı temizle ve login ekranına yönlendir
+      await signOut();
+      setLoading(false);
+
+      Alert.alert("Başarılı", "Kurye hesabınız oluşturuldu! Giriş yapın.", [
+        {
+          text: "Tamam",
+          onPress: () => router.push("/(auth)/courier/login"),
+        },
+      ]);
     }
   };
 
@@ -122,7 +236,9 @@ export default function CourierRegister() {
             <Text className="text-green-600 text-base">← Geri</Text>
           </TouchableOpacity>
           <Text className="text-3xl font-bold text-gray-900">Kurye Kayıt</Text>
-          <Text className="text-gray-600 mt-2">Yeni kurye hesabı oluşturun</Text>
+          <Text className="text-gray-600 mt-2">
+            Yeni kurye hesabı oluşturun
+          </Text>
         </View>
 
         {/* Form */}
@@ -141,7 +257,9 @@ export default function CourierRegister() {
           </View>
 
           <View>
-            <Text className="text-sm font-medium text-gray-700 mb-2">Email</Text>
+            <Text className="text-sm font-medium text-gray-700 mb-2">
+              Email
+            </Text>
             <TextInput
               className="border border-gray-300 rounded-xl px-4 py-3 text-base"
               placeholder="kurye@email.com"
@@ -154,7 +272,9 @@ export default function CourierRegister() {
           </View>
 
           <View>
-            <Text className="text-sm font-medium text-gray-700 mb-2">Telefon</Text>
+            <Text className="text-sm font-medium text-gray-700 mb-2">
+              Telefon
+            </Text>
             <TextInput
               className="border border-gray-300 rounded-xl px-4 py-3 text-base"
               placeholder="05XX XXX XX XX"
@@ -182,7 +302,9 @@ export default function CourierRegister() {
                 >
                   <Text
                     className={`text-base ${
-                      vehicleType === type ? "text-white font-semibold" : "text-gray-700"
+                      vehicleType === type
+                        ? "text-white font-semibold"
+                        : "text-gray-700"
                     }`}
                   >
                     {VEHICLE_TYPE_LABELS[type]}
@@ -193,7 +315,9 @@ export default function CourierRegister() {
           </View>
 
           <View>
-            <Text className="text-sm font-medium text-gray-700 mb-2">Şifre</Text>
+            <Text className="text-sm font-medium text-gray-700 mb-2">
+              Şifre
+            </Text>
             <TextInput
               className="border border-gray-300 rounded-xl px-4 py-3 text-base"
               placeholder="En az 6 karakter"

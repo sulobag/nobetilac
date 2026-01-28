@@ -22,10 +22,11 @@ export default function CourierLogin() {
 
     if (error) {
       Alert.alert("Giriş Hatası", error.message);
-    } else {
-      // TODO: Kurye ana sayfasına yönlendir
-      router.replace("/");
+      return;
     }
+
+    // Başarılı giriş - kurye paneline yönlendir
+    router.replace("/(courier)/home");
   };
 
   return (

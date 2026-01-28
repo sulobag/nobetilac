@@ -17,12 +17,33 @@ interface AddressComponents {
   building_no: string;
 }
 
+// Google Maps API Response Types
+interface GoogleMapsGeocodeResponse {
+  status: string;
+  results: Array<{
+    formatted_address: string;
+    geometry: {
+      location: {
+        lat: number;
+        lng: number;
+      };
+    };
+  }>;
+}
+
+// Nominatim API Response Types
+interface NominatimResult {
+  lat: string;
+  lon: string;
+  display_name: string;
+}
+
 /**
  * Google Geocoding API kullanarak adres -> koordinat dönüşümü
  * NOT: Production'da Google API Key gerekir
  */
 export async function geocodeAddress(
-  components: AddressComponents
+  components: AddressComponents,
 ): Promise<GeocodingResult | null> {
   try {
     // Tam adresi oluştur
@@ -33,7 +54,7 @@ export async function geocodeAddress(
     const apiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
     if (!apiKey) {
-      console.warn('Google Maps API Key bulunamadı. Geocoding atlanıyor.');
+      console.warn("Google Maps API Key bulunamadı. Geocoding atlanıyor.");
       return null;
     }
 
@@ -41,9 +62,9 @@ export async function geocodeAddress(
     const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodedAddress}&key=${apiKey}`;
 
     const response = await fetch(url);
-    const data = await response.json() as any;
+    const data = (await response.json()) as GoogleMapsGeocodeResponse;
 
-    if (data.status === 'OK' && data.results.length > 0) {
+    if (data.status === "OK" && data.results.length > 0) {
       const result = data.results[0];
       return {
         latitude: result.geometry.location.lat,
@@ -52,10 +73,10 @@ export async function geocodeAddress(
       };
     }
 
-    console.warn('Geocoding sonuç bulunamadı:', data.status);
+    console.warn("Geocoding sonuç bulunamadı:", data.status);
     return null;
   } catch (error) {
-    console.error('Geocoding hatası:', error);
+    console.error("Geocoding hatası:", error);
     return null;
   }
 }
@@ -65,7 +86,7 @@ export async function geocodeAddress(
  * Google API olmadan da çalışır
  */
 export async function geocodeAddressWithNominatim(
-  components: AddressComponents
+  components: AddressComponents,
 ): Promise<GeocodingResult | null> {
   try {
     // Tam adresi oluştur
@@ -76,11 +97,11 @@ export async function geocodeAddressWithNominatim(
 
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'NobetIlac/1.0', // Nominatim requires User-Agent
+        "User-Agent": "NobetIlac/1.0", // Nominatim requires User-Agent
       },
     });
 
-    const data = await response.json() as any[];
+    const data = (await response.json()) as NominatimResult[];
 
     if (data.length > 0) {
       return {
@@ -90,10 +111,10 @@ export async function geocodeAddressWithNominatim(
       };
     }
 
-    console.warn('Nominatim: Sonuç bulunamadı');
+    console.warn("Nominatim: Sonuç bulunamadı");
     return null;
   } catch (error) {
-    console.error('Nominatim geocoding hatası:', error);
+    console.error("Nominatim geocoding hatası:", error);
     return null;
   }
 }
@@ -102,14 +123,14 @@ export async function geocodeAddressWithNominatim(
  * Akıllı geocoding - önce Google, yoksa Nominatim kullan
  */
 export async function smartGeocode(
-  components: AddressComponents
+  components: AddressComponents,
 ): Promise<GeocodingResult | null> {
   // Önce Google'ı dene
   let result = await geocodeAddress(components);
-  
+
   // Google yoksa veya başarısızsa, Nominatim kullan
   if (!result) {
-    console.log('Google Geocoding başarısız, Nominatim deneniyor...');
+    console.log("Google Geocoding başarısız, Nominatim deneniyor...");
     result = await geocodeAddressWithNominatim(components);
   }
 
@@ -124,7 +145,7 @@ export function calculateDistance(
   lat1: number,
   lon1: number,
   lat2: number,
-  lon2: number
+  lon2: number,
 ): number {
   const R = 6371; // Dünya'nın yarıçapı (km)
   const dLat = toRad(lat2 - lat1);

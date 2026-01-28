@@ -2,6 +2,7 @@ import { View, Text, TextInput, TouchableOpacity, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
 
 export default function CustomerLogin() {
   const router = useRouter();
@@ -18,13 +19,37 @@ export default function CustomerLogin() {
 
     setLoading(true);
     const { error } = await signIn(email, password);
-    setLoading(false);
 
     if (error) {
+      setLoading(false);
       Alert.alert("Giriş Hatası", error.message);
+      return;
+    }
+
+    // Adres kontrolü yap ve yönlendir
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) {
+      const { data: addresses } = await supabase
+        .from("addresses")
+        .select("id")
+        .eq("user_id", user.id)
+        .limit(1);
+
+      setLoading(false);
+
+      if (addresses && addresses.length > 0) {
+        router.replace("/(customer)/home");
+      } else {
+        router.replace({
+          pathname: "/(customer)/add-address",
+          params: { firstAddress: "true" },
+        });
+      }
     } else {
-      // TODO: Kullanıcı ana sayfasına yönlendir
-      router.replace("/");
+      setLoading(false);
+      router.replace("/(customer)/home");
     }
   };
 
@@ -35,7 +60,9 @@ export default function CustomerLogin() {
         <TouchableOpacity onPress={() => router.back()} className="mb-4">
           <Text className="text-blue-600 text-base">← Geri</Text>
         </TouchableOpacity>
-        <Text className="text-3xl font-bold text-gray-900">Kullanıcı Girişi</Text>
+        <Text className="text-3xl font-bold text-gray-900">
+          Kullanıcı Girişi
+        </Text>
         <Text className="text-gray-600 mt-2">Hesabınıza giriş yapın</Text>
       </View>
 

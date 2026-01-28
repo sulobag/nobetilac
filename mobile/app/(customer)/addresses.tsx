@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { Database } from "@/types/database.types";
@@ -21,7 +21,7 @@ export default function Addresses() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchAddresses = async () => {
+  const fetchAddresses = React.useCallback(async () => {
     if (!user) return;
 
     const { data, error } = await supabase
@@ -39,11 +39,11 @@ export default function Addresses() {
 
     setLoading(false);
     setRefreshing(false);
-  };
+  }, [user]);
 
   useEffect(() => {
     fetchAddresses();
-  }, [user]);
+  }, [fetchAddresses]);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -51,37 +51,32 @@ export default function Addresses() {
   };
 
   const handleDelete = (address: Address) => {
-    Alert.alert(
-      "Adresi Sil",
-      "Bu adresi silmek istediğinize emin misiniz?",
-      [
-        { text: "İptal", style: "cancel" },
-        {
-          text: "Sil",
-          style: "destructive",
-          onPress: async () => {
-            const { error } = await supabase
-              .from("addresses")
-              .delete()
-              .eq("id", address.id);
+    Alert.alert("Adresi Sil", "Bu adresi silmek istediğinize emin misiniz?", [
+      { text: "İptal", style: "cancel" },
+      {
+        text: "Sil",
+        style: "destructive",
+        onPress: async () => {
+          const { error } = await supabase
+            .from("addresses")
+            .delete()
+            .eq("id", address.id);
 
-            if (error) {
-              Alert.alert("Hata", "Adres silinemedi: " + error.message);
-            } else {
-              fetchAddresses();
-            }
-          },
+          if (error) {
+            Alert.alert("Hata", "Adres silinemedi: " + error.message);
+          } else {
+            fetchAddresses();
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const handleSetDefault = async (address: Address) => {
-    const { error } = await supabase
+    const { error } = (await (supabase as any)
       .from("addresses")
-      // @ts-ignore - Supabase type inference issue
       .update({ is_default: true })
-      .eq("id", address.id);
+      .eq("id", address.id)) as any;
 
     if (error) {
       Alert.alert("Hata", "Varsayılan adres güncellenemedi: " + error.message);
@@ -92,10 +87,13 @@ export default function Addresses() {
 
   const renderAddress = ({ item }: { item: Address }) => (
     <View className="bg-white border border-gray-200 rounded-xl p-4 mb-3">
-      {/* Başlık ve Varsayılan Badge */}
       <View className="flex-row justify-between items-center mb-2">
         <View className="flex-row items-center">
-          <Text className="text-lg font-bold text-gray-900">{item.title}</Text>
+          <Text className="text-lg font-bold text-gray-900">
+            {item.title === "Diğer" && item.custom_title
+              ? item.custom_title
+              : item.title}
+          </Text>
           {item.is_default && (
             <View className="bg-blue-100 rounded-full px-3 py-1 ml-2">
               <Text className="text-xs font-semibold text-blue-700">
@@ -106,14 +104,12 @@ export default function Addresses() {
         </View>
       </View>
 
-      {/* Adres Detayları */}
       <Text className="text-gray-700 mb-1">
         {item.street} No:{item.building_no}
         {item.floor && `, Kat: ${item.floor}`}
         {item.apartment_no && `, Daire: ${item.apartment_no}`}
       </Text>
-      
-      {/* Formatted Address (geocoding'den gelen) */}
+
       {item.formatted_address ? (
         <Text className="text-gray-600 text-sm mb-3 leading-5">
           {item.formatted_address}
@@ -137,7 +133,6 @@ export default function Addresses() {
         </Text>
       )}
 
-      {/* Aksiyonlar */}
       <View className="flex-row gap-2 mt-2">
         {!item.is_default && (
           <TouchableOpacity
@@ -159,7 +154,6 @@ export default function Addresses() {
         </TouchableOpacity>
       </View>
 
-      {/* Konum Bilgisi (Debug) */}
       {item.latitude && item.longitude && (
         <Text className="text-xs text-gray-400 mt-2">
           📍 {item.latitude.toFixed(6)}, {item.longitude.toFixed(6)}
@@ -179,16 +173,13 @@ export default function Addresses() {
 
   return (
     <View className="flex-1 bg-gray-50">
-      {/* Header */}
       <View className="bg-white border-b border-gray-200 pt-12 pb-4 px-6">
         <TouchableOpacity onPress={() => router.back()} className="mb-2">
           <Text className="text-blue-600 text-base">← Geri</Text>
         </TouchableOpacity>
         <View className="flex-row justify-between items-center">
           <View>
-            <Text className="text-2xl font-bold text-gray-900">
-              Adreslerim
-            </Text>
+            <Text className="text-2xl font-bold text-gray-900">Adreslerim</Text>
             <Text className="text-gray-600 text-sm mt-1">
               {addresses.length} adres kayıtlı
             </Text>
@@ -202,7 +193,6 @@ export default function Addresses() {
         </View>
       </View>
 
-      {/* Adres Listesi */}
       {addresses.length === 0 ? (
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-6xl mb-4">📍</Text>

@@ -19,9 +19,9 @@ export default function AddAddress() {
   const { user } = useAuth();
 
   const isFirstAddress = params.firstAddress === "true";
-  const addressId = params.id as string | undefined;
 
   const [title, setTitle] = useState<"Ev" | "İş" | "Diğer">("Ev");
+  const [customTitle, setCustomTitle] = useState("");
   const [city, setCity] = useState("İstanbul");
   const [district, setDistrict] = useState("");
   const [neighborhood, setNeighborhood] = useState("");
@@ -34,7 +34,7 @@ export default function AddAddress() {
   const [loading, setLoading] = useState(false);
   const [geocoding, setGeocoding] = useState(false);
 
-  const titleOptions: Array<"Ev" | "İş" | "Diğer"> = ["Ev", "İş", "Diğer"];
+  const titleOptions: ("Ev" | "İş" | "Diğer")[] = ["Ev", "İş", "Diğer"];
 
   const handleSave = async () => {
     // Validasyon
@@ -47,6 +47,12 @@ export default function AddAddress() {
       !buildingNo
     ) {
       Alert.alert("Hata", "Lütfen zorunlu alanları doldurun");
+      return;
+    }
+
+    // Diğer seçiliyse özel başlık kontrolü
+    if (title === "Diğer" && !customTitle.trim()) {
+      Alert.alert("Hata", "Lütfen adres başlığını girin");
       return;
     }
 
@@ -71,7 +77,8 @@ export default function AddAddress() {
 
     const addressData = {
       user_id: user.id,
-      title,
+      title: title,
+      custom_title: title === "Diğer" ? customTitle : null,
       city,
       district,
       neighborhood,
@@ -86,7 +93,9 @@ export default function AddAddress() {
       is_default: isDefault,
     };
 
-    const { error } = await supabase.from("addresses").insert(addressData);
+    const { error } = await supabase
+      .from("addresses")
+      .insert(addressData as any);
 
     setLoading(false);
 
@@ -96,7 +105,7 @@ export default function AddAddress() {
       if (!geocodeResult) {
         Alert.alert(
           "Uyarı",
-          "Adres kaydedildi ancak konum bilgisi hesaplanamadı. Daha sonra güncellenebilir."
+          "Adres kaydedildi ancak konum bilgisi hesaplanamadı. Daha sonra güncellenebilir.",
         );
       }
 
@@ -165,6 +174,22 @@ export default function AddAddress() {
               ))}
             </View>
           </View>
+
+          {/* Özel Başlık (Diğer seçiliyse) */}
+          {title === "Diğer" && (
+            <View>
+              <Text className="text-sm font-medium text-gray-700 mb-2">
+                Özel Adres Başlığı *
+              </Text>
+              <TextInput
+                className="border border-gray-300 rounded-xl px-4 py-3 text-base"
+                placeholder="Örn: Annemin Evi, Ofis 2, Villa..."
+                value={customTitle}
+                onChangeText={setCustomTitle}
+                autoCapitalize="words"
+              />
+            </View>
+          )}
 
           {/* Şehir */}
           <View>
@@ -316,8 +341,7 @@ export default function AddAddress() {
           <View className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
             <Text className="text-sm text-gray-700">
               💡 <Text className="font-semibold">Bilgi:</Text> Konum bilgisi
-              otomatik olarak hesaplanacaktır. Bu işlem birkaç saniye
-              sürebilir.
+              otomatik olarak hesaplanacaktır. Bu işlem birkaç saniye sürebilir.
             </Text>
           </View>
         </View>
