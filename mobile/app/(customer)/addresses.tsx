@@ -133,6 +133,31 @@ export default function Addresses() {
         </Text>
       )}
 
+      {/* Harita Önizlemesi Butonu */}
+      {item.latitude && item.longitude && (
+        <TouchableOpacity
+          onPress={() =>
+            router.push({
+              pathname: "/(customer)/address-map",
+              params: {
+                latitude: item.latitude,
+                longitude: item.longitude,
+                title:
+                  item.title === "Diğer" && item.custom_title
+                    ? item.custom_title
+                    : item.title,
+                details: `${item.neighborhood}, ${item.street} No: ${item.building_no}`,
+              },
+            })
+          }
+          className="mb-2 bg-blue-50 border border-blue-200 rounded-lg py-2 px-3 flex-row items-center justify-center"
+        >
+          <Text className="text-blue-600 text-sm font-medium">
+            🗺️ Haritada Göster
+          </Text>
+        </TouchableOpacity>
+      )}
+
       <View className="flex-row gap-2 mt-2">
         {!item.is_default && (
           <TouchableOpacity

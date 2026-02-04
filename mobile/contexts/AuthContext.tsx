@@ -2,7 +2,6 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { Session, User as SupabaseUser } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import type { Database } from "@/types/database.types";
-import { router } from "expo-router";
 import { becomeCourier as becomeCourierHelper } from "./becomeCourierHelper";
 
 type UserProfile = Database["public"]["Tables"]["users"]["Row"];
@@ -76,15 +75,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return typeof err === "object" && err !== null && "code" in err;
       };
 
+      // Eğer kullanıcı profili henüz oluşturulmamışsa (0 satır hatası),
+      // artık oturumu kapatmak yerine sadece profil bilgisini temizliyoruz.
+      // Profil oluşturma işlemi email doğrulaması sonrasında verifyOTP içinde yapılacak.
       if (
         isPostgresError(error) &&
         (error.code === "PGRST116" || error.details?.includes("0 rows"))
       ) {
-        console.log("❌ Profil bulunamadı, kullanıcı çıkış yapılıyor...");
-        await supabase.auth.signOut();
-        setUser(null);
         setProfile(null);
-        router.replace("/");
+        setHasAddress(false);
       }
     } finally {
       setLoading(false);
@@ -152,48 +151,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     vehicleType?: "motorcycle" | "car" | "bicycle" | "scooter",
   ) => {
     try {
+      const userRoles: ("customer" | "courier")[] =
+        role === "courier" ? ["customer", "courier"] : ["customer"];
+
+      // Sadece auth tarafında kullanıcıyı oluşturuyoruz,
+      // profil tablosuna kayıt email doğrulandıktan sonra yapılacak.
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            full_name: fullName,
+            phone,
+            role: userRoles,
+            vehicle_type: role === "courier" ? vehicleType || null : null,
+          },
+        },
       });
 
       if (authError) throw authError;
       if (!authData.user) throw new Error("Kullanıcı oluşturulamadı");
-
-      const userRoles: ("customer" | "courier")[] =
-        role === "courier" ? ["customer", "courier"] : ["customer"];
-
-      const userData: any = {
-        id: authData.user.id,
-        email,
-        phone,
-        full_name: fullName,
-        role: userRoles,
-      };
-
-      const { error: profileError } = (await supabase
-        .from("users")
-        .insert(userData)) as any;
-
-      if (profileError) throw profileError;
-
-      if (role === "courier") {
-        if (!vehicleType) {
-          throw new Error("Kurye için araç tipi gereklidir");
-        }
-
-        const courierData: any = {
-          user_id: authData.user.id,
-          vehicle_type: vehicleType,
-          is_available: false,
-        };
-
-        const { error: courierError } = (await supabase
-          .from("couriers")
-          .insert(courierData)) as any;
-
-        if (courierError) throw courierError;
-      }
 
       const needsVerification = !authData.session;
 
@@ -279,13 +256,74 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data, error } = await supabase.auth.verifyOtp({
         email,
         token,
-        type: "email",
+        // Kayıt doğrulaması için 'signup' tipi kullanılmalı
+        type: "signup",
       });
 
       if (error) throw error;
 
+      // Doğrulama başarılıysa, auth kullanıcısını al
+      const { data: userResult, error: userError } =
+        await supabase.auth.getUser();
+
+      if (userError) throw userError;
+
+      const authedUser = userResult.user;
+
+      if (authedUser) {
+        const metadata: any = authedUser.user_metadata || {};
+
+        const userRoles: ("customer" | "courier")[] = Array.isArray(
+          metadata.role,
+        )
+          ? metadata.role
+          : metadata.role
+            ? [metadata.role]
+            : ["customer"];
+
+        const userData: any = {
+          id: authedUser.id,
+          email: authedUser.email,
+          phone: metadata.phone || null,
+          full_name: metadata.full_name || null,
+          role: userRoles,
+        };
+
+        // Profil tablosuna ilk kez kayıt oluştur (varsa tekrar denemede hata yutulur)
+        const { error: profileError } = (await supabase
+          .from("users")
+          .insert(userData)) as any;
+
+        if (profileError && !`${profileError.message}`.includes("duplicate")) {
+          // Sadece duplicate olmayan hataları logla
+          console.error("Profil oluşturma hatası:", profileError);
+        }
+
+        // Kurye rolü varsa couriers tablosuna da kayıt aç
+        if (userRoles.includes("courier") && metadata.vehicle_type) {
+          const courierData: any = {
+            user_id: authedUser.id,
+            vehicle_type: metadata.vehicle_type,
+            is_available: false,
+          };
+
+          const { error: courierError } = (await supabase
+            .from("couriers")
+            .insert(courierData)) as any;
+
+          if (
+            courierError &&
+            !`${courierError.message}`.includes("duplicate")
+          ) {
+            console.error("Kurye kaydı oluşturma hatası:", courierError);
+          }
+        }
+
+        // Profil state'ini yenile
+        await fetchProfile(authedUser.id);
+      }
+
       if (data?.session) {
-        console.log("✅ Email doğrulandı ve otomatik giriş yapıldı");
         return { error: null, session: data.session };
       }
 

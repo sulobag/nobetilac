@@ -9,7 +9,14 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "config": {
+        "googleMapsApiKey": "AIzaSyD43zjP2TDfdyQEw6SvSMWXrGc1rdTJNRs"
+      },
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Konumunuzu teslimat adresi için kullanmak istiyoruz.",
+        "NSLocationAlwaysUsageDescription": "Aktif teslimatlarınızı takip etmek için konumunuza ihtiyacımız var."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -19,7 +26,13 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyD43zjP2TDfdyQEw6SvSMWXrGc1rdTJNRs"
+        }
+      },
+      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"]
     },
     "web": {
       "output": "static",

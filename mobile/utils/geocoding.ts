@@ -130,7 +130,6 @@ export async function smartGeocode(
 
   // Google yoksa veya başarısızsa, Nominatim kullan
   if (!result) {
-    console.log("Google Geocoding başarısız, Nominatim deneniyor...");
     result = await geocodeAddressWithNominatim(components);
   }
 

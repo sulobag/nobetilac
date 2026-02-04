@@ -42,18 +42,23 @@ export default function VerifyEmail() {
         "Kod geçersiz veya süresi dolmuş. Lütfen tekrar deneyin.",
       );
     } else {
-      Alert.alert(
-        "Başarılı!",
-        "Email adresiniz doğrulandı. Yönlendiriliyorsunuz...",
-        [
-          {
-            text: "Tamam",
-            onPress: () => {
+      Alert.alert("Başarılı!", "Email adresiniz doğrulandı.", [
+        {
+          text: "Tamam",
+          onPress: () => {
+            if (userType === "customer") {
+              // Yeni müşteri kaydı: ilk adres ekleme akışına gönder
+              router.replace({
+                pathname: "/(customer)/add-address",
+                params: { firstAddress: "true" },
+              });
+            } else {
+              // Kurye veya diğer durumlar için ana giriş ekranına dön
               router.replace("/");
-            },
+            }
           },
-        ],
-      );
+        },
+      ]);
     }
   };
 

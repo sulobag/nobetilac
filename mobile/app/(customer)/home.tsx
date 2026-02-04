@@ -47,8 +47,20 @@ export default function CustomerHome() {
         </TouchableOpacity>
 
         <TouchableOpacity
+          onPress={() => router.push("/(customer)/pharmacies")}
+          className="bg-emerald-50 border border-emerald-200 rounded-xl p-4"
+        >
+          <Text className="text-lg font-semibold text-emerald-900">
+            🏥 Eczaneler
+          </Text>
+          <Text className="text-sm text-gray-600 mt-1">
+            Bölgenizdeki eczaneleri liste veya harita üzerinden görün
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
           onPress={() => {
-            Alert.alert("Yakında", "Bu özellik yakında eklenecek!");
+            router.push("/(customer)/order-by-barcode");
           }}
           className="bg-gray-50 border border-gray-200 rounded-xl p-4"
         >
@@ -56,13 +68,13 @@ export default function CustomerHome() {
             💊 Sipariş Ver
           </Text>
           <Text className="text-sm text-gray-600 mt-1">
-            Reçete yükleyerek ilaç siparişi verin
+            Reçete numarası girerek sipariş verin
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           onPress={() => {
-            Alert.alert("Yakında", "Bu özellik yakında eklenecek!");
+            router.push("/(customer)/orders");
           }}
           className="bg-gray-50 border border-gray-200 rounded-xl p-4"
         >

@@ -140,7 +140,7 @@ export default function ForgotPassword() {
                 Doğrulama Kodu
               </Text>
               <TextInput
-                className="border border-gray-300 rounded-lg px-4 py-3 text-base text-center text-2xl tracking-widest"
+                className="border border-gray-300 rounded-lg px-4 py-3  text-center text-2xl tracking-widest"
                 placeholder="000000"
                 value={code}
                 onChangeText={setCode}

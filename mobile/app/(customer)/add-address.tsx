@@ -16,23 +16,39 @@ import { smartGeocode } from "@/utils/geocoding";
 export default function AddAddress() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { user } = useAuth();
+  const { user, checkUserAddresses } = useAuth();
 
   const isFirstAddress = params.firstAddress === "true";
 
   const [title, setTitle] = useState<"Ev" | "İş" | "Diğer">("Ev");
   const [customTitle, setCustomTitle] = useState("");
-  const [city, setCity] = useState("İstanbul");
-  const [district, setDistrict] = useState("");
-  const [neighborhood, setNeighborhood] = useState("");
-  const [street, setStreet] = useState("");
-  const [buildingNo, setBuildingNo] = useState("");
+  const [city, setCity] = useState(
+    params.city ? String(params.city) : "İstanbul",
+  );
+  const [district, setDistrict] = useState(
+    params.district ? String(params.district) : "",
+  );
+  const [neighborhood, setNeighborhood] = useState(
+    params.neighborhood ? String(params.neighborhood) : "",
+  );
+  const [street, setStreet] = useState(
+    params.street ? String(params.street) : "",
+  );
+  const [buildingNo, setBuildingNo] = useState(
+    params.buildingNo ? String(params.buildingNo) : "",
+  );
   const [floor, setFloor] = useState("");
   const [apartmentNo, setApartmentNo] = useState("");
   const [addressDescription, setAddressDescription] = useState("");
   const [isDefault, setIsDefault] = useState(isFirstAddress);
   const [loading, setLoading] = useState(false);
   const [geocoding, setGeocoding] = useState(false);
+  const [latitude, setLatitude] = useState<number | null>(
+    params.latitude ? parseFloat(String(params.latitude)) : null,
+  );
+  const [longitude, setLongitude] = useState<number | null>(
+    params.longitude ? parseFloat(String(params.longitude)) : null,
+  );
 
   const titleOptions: ("Ev" | "İş" | "Diğer")[] = ["Ev", "İş", "Diğer"];
 
@@ -62,18 +78,27 @@ export default function AddAddress() {
     }
 
     setLoading(true);
-    setGeocoding(true);
 
-    // Geocoding - koordinatları hesapla
-    const geocodeResult = await smartGeocode({
-      city,
-      district,
-      neighborhood,
-      street,
-      building_no: buildingNo,
-    });
+    let finalLatitude = latitude;
+    let finalLongitude = longitude;
+    let formattedAddress = null;
 
-    setGeocoding(false);
+    // Eğer haritadan konum seçilmediyse, geocoding yap
+    if (!latitude || !longitude) {
+      setGeocoding(true);
+      const geocodeResult = await smartGeocode({
+        city,
+        district,
+        neighborhood,
+        street,
+        building_no: buildingNo,
+      });
+      setGeocoding(false);
+
+      finalLatitude = geocodeResult?.latitude || null;
+      finalLongitude = geocodeResult?.longitude || null;
+      formattedAddress = geocodeResult?.formatted_address || null;
+    }
 
     const addressData = {
       user_id: user.id,
@@ -87,9 +112,9 @@ export default function AddAddress() {
       floor: floor || null,
       apartment_no: apartmentNo || null,
       address_description: addressDescription || null,
-      latitude: geocodeResult?.latitude || null,
-      longitude: geocodeResult?.longitude || null,
-      formatted_address: geocodeResult?.formatted_address || null,
+      latitude: finalLatitude,
+      longitude: finalLongitude,
+      formatted_address: formattedAddress,
       is_default: isDefault,
     };
 
@@ -102,23 +127,42 @@ export default function AddAddress() {
     if (error) {
       Alert.alert("Hata", "Adres kaydedilemedi: " + error.message);
     } else {
-      if (!geocodeResult) {
+      // Auth context içindeki hasAddress bilgisini güncelle
+      await checkUserAddresses();
+
+      if (!finalLatitude || !finalLongitude) {
         Alert.alert(
           "Uyarı",
           "Adres kaydedildi ancak konum bilgisi hesaplanamadı. Daha sonra güncellenebilir.",
+          [
+            {
+              text: "Tamam",
+              onPress: () => {
+                if (isFirstAddress) {
+                  // İlk adres akışında direkt ana sayfaya dön
+                  router.replace("/(customer)/home");
+                } else {
+                  // Normal akışta bir önceki ekrana (adresler) geri dön
+                  router.back();
+                }
+              },
+            },
+          ],
         );
-      }
-
-      if (isFirstAddress) {
-        // İlk adres eklendiyse ana sayfaya yönlendir
-        Alert.alert("Başarılı", "Adresiniz kaydedildi!", [
-          {
-            text: "Tamam",
-            onPress: () => router.replace("/(customer)/home"),
-          },
-        ]);
       } else {
-        router.back();
+        // Başarılı kayıt
+        if (isFirstAddress) {
+          // İlk adres eklendiyse ana sayfaya yönlendir
+          Alert.alert("Başarılı", "Adresiniz kaydedildi!", [
+            {
+              text: "Tamam",
+              onPress: () => router.replace("/(customer)/home"),
+            },
+          ]);
+        } else {
+          // Diğer adreslerde bir önceki ekrana (adresler) geri dön
+          router.back();
+        }
       }
     }
   };
@@ -142,6 +186,36 @@ export default function AddAddress() {
               : "Teslimat adresi bilgilerini girin"}
           </Text>
         </View>
+
+        {/* Harita Butonu */}
+        <TouchableOpacity
+          onPress={() =>
+            router.replace({
+              pathname: "/(customer)/select-location",
+              params: {
+                // İlk adres akışını kaybetmemek için parametreyi taşı
+                ...(isFirstAddress ? { firstAddress: "true" } : {}),
+                from: "add-address",
+              },
+            })
+          }
+          className="bg-blue-50 border-2 border-blue-300 rounded-xl p-4 mb-4 flex-row items-center justify-between"
+        >
+          <View className="flex-row items-center flex-1">
+            <Text className="text-3xl mr-3">🗺️</Text>
+            <View className="flex-1">
+              <Text className="text-blue-700 font-semibold text-base">
+                Haritadan Adres Seç
+              </Text>
+              <Text className="text-blue-600 text-sm mt-1">
+                {latitude && longitude
+                  ? "✓ Konum seçildi"
+                  : "Haritada konumunuzu işaretleyin"}
+              </Text>
+            </View>
+          </View>
+          <Text className="text-blue-600 text-xl">→</Text>
+        </TouchableOpacity>
 
         {/* Form */}
         <View className="space-y-4">
