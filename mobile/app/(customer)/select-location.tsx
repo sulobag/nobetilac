@@ -7,6 +7,7 @@ import {
   Alert,
   Keyboard,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import MapViewComponent, {
   type MapViewComponentRef,
@@ -76,7 +77,7 @@ export default function SelectLocation() {
       try {
         const address = await reverseGeocode(
           currentRegion.latitude,
-          currentRegion.longitude,
+          currentRegion.longitude
         );
 
         if (address) {
@@ -126,7 +127,7 @@ export default function SelectLocation() {
       setFetchingAddress(false); // Arama sonucu geldiğinde loading kapat
       Keyboard.dismiss();
     },
-    [],
+    []
   );
 
   const handleSelectLocation = async () => {
@@ -183,18 +184,18 @@ export default function SelectLocation() {
         <TouchableOpacity
           onPress={getCurrentUserLocation}
           disabled={loading}
-          className="bg-white rounded-full p-3 shadow-lg"
+          className="bg-white rounded-full p-3"
         >
           {loading ? (
             <ActivityIndicator size="small" color="#2563eb" />
           ) : (
-            <Text className="text-2xl">📍</Text>
+            <Ionicons name="locate-outline" size={22} color="#2563eb" />
           )}
         </TouchableOpacity>
       </View>
 
       {/* Adres Bilgisi Card */}
-      <View className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl p-6">
+      <View className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl p-6">
         <View className="mb-4">
           <Text className="text-lg font-bold text-gray-900 mb-2">
             Seçili Konum
@@ -216,9 +217,15 @@ export default function SelectLocation() {
         </View>
 
         {/* Koordinatlar */}
-        <View className="mb-4 bg-gray-50 rounded-lg p-3">
+        <View className="mb-4 bg-gray-50 rounded-lg p-3 flex-row items-center">
+          <Ionicons
+            name="location-outline"
+            size={14}
+            color="#6B7280"
+            style={{ marginRight: 4 }}
+          />
           <Text className="text-xs text-gray-500">
-            📌 {region.latitude.toFixed(6)}, {region.longitude.toFixed(6)}
+            {region.latitude.toFixed(6)}, {region.longitude.toFixed(6)}
           </Text>
         </View>
 
@@ -236,7 +243,7 @@ export default function SelectLocation() {
           <TouchableOpacity
             onPress={handleSelectLocation}
             disabled={loading || fetchingAddress || !selectedAddress}
-            className={`flex-1 bg-blue-600 rounded-xl py-4 ${
+            className={`flex-1 bg-emerald-600 rounded-xl py-4 ${
               loading || fetchingAddress || !selectedAddress ? "opacity-50" : ""
             }`}
           >

@@ -74,12 +74,12 @@ export default function LocationSearch({
         if (errorMessage.includes("API")) {
           Alert.alert(
             "API Hatası",
-            "Adres arama servisi şu anda kullanılamıyor. Lütfen manuel olarak adres girin.",
+            "Adres arama servisi şu anda kullanılamıyor. Lütfen manuel olarak adres girin."
           );
         } else {
           Alert.alert(
             "Bağlantı Hatası",
-            "İnternet bağlantınızı kontrol edin ve tekrar deneyin.",
+            "İnternet bağlantınızı kontrol edin ve tekrar deneyin."
           );
         }
       } finally {
@@ -113,12 +113,12 @@ export default function LocationSearch({
         setLoading(false);
       }
     },
-    [onSelectLocation],
+    [onSelectLocation]
   );
 
   return (
     <View className="w-full">
-      <View className="bg-white rounded-xl shadow-lg p-2">
+      <View className="bg-white rounded-xl p-2">
         <View className="flex-row items-center">
           <Text className="text-xl mr-2">🔍</Text>
           <TextInput

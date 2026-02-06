@@ -81,7 +81,7 @@ export default function CourierRegister() {
           text: "Tamam",
           onPress: () => router.push("/(auth)/courier/login"),
         },
-      ],
+      ]
     );
   };
 
@@ -105,7 +105,7 @@ export default function CourierRegister() {
     if (!validatePhone(phone)) {
       Alert.alert(
         "Hata",
-        "Telefon numarası 05XX XXX XX XX formatında olmalıdır",
+        "Telefon numarası 05XX XXX XX XX formatında olmalıdır"
       );
       return;
     }
@@ -127,7 +127,7 @@ export default function CourierRegister() {
       phone,
       fullName,
       "courier",
-      vehicleType,
+      vehicleType
     );
 
     if (error) {
@@ -136,7 +136,7 @@ export default function CourierRegister() {
       if (error.message.includes("rate limit")) {
         Alert.alert(
           "Çok Fazla Deneme",
-          "Çok fazla kayıt denemesi yaptınız. Lütfen 5-10 dakika bekleyip tekrar deneyin.",
+          "Çok fazla kayıt denemesi yaptınız. Lütfen 5-10 dakika bekleyip tekrar deneyin."
         );
         return;
       }
@@ -168,7 +168,7 @@ export default function CourierRegister() {
                 text: "Giriş Yap",
                 onPress: () => router.replace("/(auth)/courier/login"),
               },
-            ],
+            ]
           );
           return;
         }
@@ -186,7 +186,7 @@ export default function CourierRegister() {
               text: "Evet, Kurye Ol",
               onPress: handleBecomeCourier,
             },
-          ],
+          ]
         );
         return;
       }
@@ -210,7 +210,7 @@ export default function CourierRegister() {
                 params: { email, userType: "courier" },
               }),
           },
-        ],
+        ]
       );
     } else {
       // Email verification yok, direkt session oluştu
@@ -228,27 +228,32 @@ export default function CourierRegister() {
   };
 
   return (
-    <ScrollView className="flex-1 bg-white">
+    <ScrollView className="flex-1 bg-gray-50">
       <View className="p-6">
         {/* Header */}
         <View className="mt-12 mb-8">
           <TouchableOpacity onPress={() => router.back()} className="mb-4">
             <Text className="text-green-600 text-base">← Geri</Text>
           </TouchableOpacity>
-          <Text className="text-3xl font-bold text-gray-900">Kurye Kayıt</Text>
-          <Text className="text-gray-600 mt-2">
-            Yeni kurye hesabı oluşturun
+          <Text className="text-xs font-semibold text-green-600 uppercase">
+            Kurye Paneli
+          </Text>
+          <Text className="text-3xl font-bold text-gray-900 mt-1">
+            Kurye Kayıt
+          </Text>
+          <Text className="text-gray-600 mt-2 text-sm">
+            Yeni kurye hesabı oluşturun.
           </Text>
         </View>
 
         {/* Form */}
-        <View className="space-y-4">
+        <View className="space-y-4 bg-white rounded-2xl px-4 py-6 border border-gray-100">
           <View>
             <Text className="text-sm font-medium text-gray-700 mb-2">
               Ad Soyad
             </Text>
             <TextInput
-              className="border border-gray-300 rounded-xl px-4 py-3 text-base"
+              className="border border-gray-300 rounded-xl px-4 py-3 text-base bg-gray-50"
               placeholder="Ahmet Kurye"
               value={fullName}
               onChangeText={setFullName}
@@ -261,7 +266,7 @@ export default function CourierRegister() {
               Email
             </Text>
             <TextInput
-              className="border border-gray-300 rounded-xl px-4 py-3 text-base"
+              className="border border-gray-300 rounded-xl px-4 py-3 text-base bg-gray-50"
               placeholder="kurye@email.com"
               value={email}
               onChangeText={setEmail}
@@ -276,7 +281,7 @@ export default function CourierRegister() {
               Telefon
             </Text>
             <TextInput
-              className="border border-gray-300 rounded-xl px-4 py-3 text-base"
+              className="border border-gray-300 rounded-xl px-4 py-3 text-base bg-gray-50"
               placeholder="05XX XXX XX XX"
               value={phone}
               onChangeText={setPhone}
@@ -319,7 +324,7 @@ export default function CourierRegister() {
               Şifre
             </Text>
             <TextInput
-              className="border border-gray-300 rounded-xl px-4 py-3 text-base"
+              className="border border-gray-300 rounded-xl px-4 py-3 text-base bg-gray-50"
               placeholder="En az 6 karakter"
               value={password}
               onChangeText={setPassword}
@@ -333,7 +338,7 @@ export default function CourierRegister() {
               Şifre Tekrar
             </Text>
             <TextInput
-              className="border border-gray-300 rounded-xl px-4 py-3 text-base"
+              className="border border-gray-300 rounded-xl px-4 py-3 text-base bg-gray-50"
               placeholder="Şifrenizi tekrar girin"
               value={confirmPassword}
               onChangeText={setConfirmPassword}
@@ -345,7 +350,7 @@ export default function CourierRegister() {
           <TouchableOpacity
             onPress={handleRegister}
             disabled={loading}
-            className={`bg-green-600 rounded-xl py-4 mt-6 ${
+            className={`bg-green-600 rounded-xl py-4 mt-4 ${
               loading ? "opacity-50" : ""
             }`}
           >
@@ -358,7 +363,7 @@ export default function CourierRegister() {
             onPress={() => router.push("/(auth)/courier/login")}
             className="py-4"
           >
-            <Text className="text-center text-gray-600">
+            <Text className="text-center text-gray-600 text-sm">
               Zaten kurye hesabınız var mı?{" "}
               <Text className="text-green-600 font-semibold">Giriş Yapın</Text>
             </Text>

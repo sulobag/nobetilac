@@ -10,6 +10,7 @@ export default function CustomerLayout() {
       <Stack.Screen name="orders" />
       <Stack.Screen name="pharmacies" />
       <Stack.Screen name="pharmacies-map" />
+      <Stack.Screen name="profile" />
     </Stack>
   );
 }

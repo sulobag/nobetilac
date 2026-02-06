@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import MapViewComponent from "@/components/MapView";
 import type { Region } from "react-native-maps";
@@ -37,7 +38,7 @@ export default function AddressMap() {
       />
 
       {/* Adres Detay Card */}
-      <View className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl p-6">
+      <View className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl p-6">
         <View className="mb-4">
           <Text className="text-xl font-bold text-gray-900 mb-2">
             {addressTitle}
@@ -46,16 +47,22 @@ export default function AddressMap() {
         </View>
 
         {/* Koordinatlar */}
-        <View className="mb-4 bg-gray-50 rounded-lg p-3">
+        <View className="mb-4 bg-gray-50 rounded-lg p-3 flex-row items-center">
+          <Ionicons
+            name="location-outline"
+            size={14}
+            color="#6B7280"
+            style={{ marginRight: 4 }}
+          />
           <Text className="text-xs text-gray-500">
-            📌 {latitude.toFixed(6)}, {longitude.toFixed(6)}
+            {latitude.toFixed(6)}, {longitude.toFixed(6)}
           </Text>
         </View>
 
         {/* Kapat Butonu */}
         <TouchableOpacity
           onPress={() => router.back()}
-          className="bg-blue-600 rounded-xl py-4"
+          className="bg-emerald-600 rounded-xl py-4"
         >
           <Text className="text-white text-center text-base font-semibold">
             Kapat

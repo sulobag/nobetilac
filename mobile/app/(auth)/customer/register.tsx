@@ -36,7 +36,7 @@ export default function CustomerRegister() {
     if (!validatePhone(phone)) {
       Alert.alert(
         "Hata",
-        "Telefon numarası 05XX XXX XX XX formatında olmalıdır",
+        "Telefon numarası 05XX XXX XX XX formatında olmalıdır"
       );
       return;
     }
@@ -57,7 +57,7 @@ export default function CustomerRegister() {
       password,
       phone,
       fullName,
-      "customer",
+      "customer"
     );
 
     if (error) {
@@ -66,7 +66,7 @@ export default function CustomerRegister() {
       if (error.message.includes("rate limit")) {
         Alert.alert(
           "Çok Fazla Deneme",
-          "Çok fazla kayıt denemesi yaptınız. Lütfen 5-10 dakika bekleyip tekrar deneyin.",
+          "Çok fazla kayıt denemesi yaptınız. Lütfen 5-10 dakika bekleyip tekrar deneyin."
         );
       } else {
         Alert.alert("Kayıt Hatası", error.message);
@@ -88,7 +88,7 @@ export default function CustomerRegister() {
                 params: { email, userType: "customer" },
               }),
           },
-        ],
+        ]
       );
     } else {
       // Email verification yok, direkt session oluştu
@@ -103,27 +103,32 @@ export default function CustomerRegister() {
   };
 
   return (
-    <ScrollView className="flex-1 bg-white">
+    <ScrollView className="flex-1 bg-gray-50">
       <View className="p-6">
         {/* Header */}
         <View className="mt-12 mb-8">
           <TouchableOpacity onPress={() => router.back()} className="mb-4">
-            <Text className="text-blue-600 text-base">← Geri</Text>
+            <Text className="text-emerald-600 text-base">← Geri</Text>
           </TouchableOpacity>
-          <Text className="text-3xl font-bold text-gray-900">
+          <Text className="text-xs font-semibold text-emerald-600 uppercase">
+            Nöbet İlaç
+          </Text>
+          <Text className="text-3xl font-bold text-gray-900 mt-1">
             Kullanıcı Kayıt
           </Text>
-          <Text className="text-gray-600 mt-2">Yeni hesap oluşturun</Text>
+          <Text className="text-gray-600 mt-2 text-sm">
+            Yeni hesap oluşturun, reçetelerinizi kolayca yönetin.
+          </Text>
         </View>
 
         {/* Form */}
-        <View className="space-y-4">
+        <View className="space-y-4 bg-white rounded-2xl px-4 py-6 border border-gray-100">
           <View>
             <Text className="text-sm font-medium text-gray-700 mb-2">
               Ad Soyad
             </Text>
             <TextInput
-              className="border border-gray-300 rounded-xl px-4 py-3 text-base"
+              className="border border-gray-300 rounded-xl px-4 py-3 text-base bg-gray-50"
               placeholder="Ali Yılmaz"
               value={fullName}
               onChangeText={setFullName}
@@ -136,7 +141,7 @@ export default function CustomerRegister() {
               Email
             </Text>
             <TextInput
-              className="border border-gray-300 rounded-xl px-4 py-3 text-base"
+              className="border border-gray-300 rounded-xl px-4 py-3 text-base bg-gray-50"
               placeholder="ornek@email.com"
               value={email}
               onChangeText={setEmail}
@@ -151,7 +156,7 @@ export default function CustomerRegister() {
               Telefon
             </Text>
             <TextInput
-              className="border border-gray-300 rounded-xl px-4 py-3 text-base"
+              className="border border-gray-300 rounded-xl px-4 py-3 text-base bg-gray-50"
               placeholder="05XX XXX XX XX"
               value={phone}
               onChangeText={setPhone}
@@ -165,7 +170,7 @@ export default function CustomerRegister() {
               Şifre
             </Text>
             <TextInput
-              className="border border-gray-300 rounded-xl px-4 py-3 text-base"
+              className="border border-gray-300 rounded-xl px-4 py-3 text-base bg-gray-50"
               placeholder="En az 6 karakter"
               value={password}
               onChangeText={setPassword}
@@ -179,7 +184,7 @@ export default function CustomerRegister() {
               Şifre Tekrar
             </Text>
             <TextInput
-              className="border border-gray-300 rounded-xl px-4 py-3 text-base"
+              className="border border-gray-300 rounded-xl px-4 py-3 text-base bg-gray-50"
               placeholder="Şifrenizi tekrar girin"
               value={confirmPassword}
               onChangeText={setConfirmPassword}
@@ -191,7 +196,9 @@ export default function CustomerRegister() {
           <TouchableOpacity
             onPress={handleRegister}
             disabled={loading}
-            className={`bg-blue-600 rounded-xl py-4 mt-6 ${loading ? "opacity-50" : ""}`}
+            className={`bg-emerald-600 rounded-xl py-4 mt-4 ${
+              loading ? "opacity-50" : ""
+            }`}
           >
             <Text className="text-white text-center text-lg font-semibold">
               {loading ? "Kayıt yapılıyor..." : "Kayıt Ol"}
@@ -202,9 +209,11 @@ export default function CustomerRegister() {
             onPress={() => router.push("/(auth)/customer/login")}
             className="py-4"
           >
-            <Text className="text-center text-gray-600">
+            <Text className="text-center text-gray-600 text-sm">
               Zaten hesabınız var mı?{" "}
-              <Text className="text-blue-600 font-semibold">Giriş Yapın</Text>
+              <Text className="text-emerald-600 font-semibold">
+                Giriş Yapın
+              </Text>
             </Text>
           </TouchableOpacity>
         </View>

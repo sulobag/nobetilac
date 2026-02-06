@@ -6,7 +6,8 @@ import React, {
   forwardRef,
   useImperativeHandle,
 } from "react";
-import { View, StyleSheet, Platform, Text } from "react-native";
+import { View, StyleSheet, Platform } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import MapView, { Marker, Region, PROVIDER_GOOGLE } from "react-native-maps";
 
 export interface MapViewComponentRef {
@@ -49,7 +50,7 @@ const MapViewComponent = forwardRef<MapViewComponentRef, MapViewComponentProps>(
       centerMarker = false,
       onMapPress,
     },
-    ref,
+    ref
   ) => {
     const mapRef = useRef<MapView>(null);
     const [region, setRegion] = useState<Region>(initialRegion);
@@ -131,7 +132,7 @@ const MapViewComponent = forwardRef<MapViewComponentRef, MapViewComponentProps>(
               {/* Pin Body */}
               <View style={styles.pinBody}>
                 <View style={styles.pinInner}>
-                  <Text style={styles.pinIcon}>📍</Text>
+                  <Ionicons name="location-sharp" size={18} color="#EF4444" />
                 </View>
               </View>
               {/* Pin Tip */}
@@ -143,7 +144,7 @@ const MapViewComponent = forwardRef<MapViewComponentRef, MapViewComponentProps>(
         )}
       </View>
     );
-  },
+  }
 );
 
 MapViewComponent.displayName = "MapViewComponent";
@@ -196,9 +197,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     alignItems: "center",
     justifyContent: "center",
-  },
-  pinIcon: {
-    fontSize: 20,
   },
   pinTip: {
     width: 0,

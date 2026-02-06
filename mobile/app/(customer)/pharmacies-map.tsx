@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import MapView, {
   Callout,
   type Region,
 } from "react-native-maps";
+import { useQuery } from "@tanstack/react-query";
 
 const LOCATION_PIN = require("@/assets/images/location-pin.png");
 
@@ -32,15 +33,13 @@ type PharmacyRow = {
 
 export default function PharmaciesMap() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [pharmacies, setPharmacies] = useState<PharmacyRow[]>([]);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchPharmacies = async () => {
-      setLoading(true);
-      setError(null);
-
+  const {
+    data: pharmacies = [],
+    isLoading: loading,
+    error,
+  } = useQuery({
+    queryKey: ["pharmacies-map"],
+    queryFn: async () => {
       const { data, error: err } = await (supabase as any)
         .from("pharmacies")
         .select(
@@ -49,24 +48,19 @@ export default function PharmaciesMap() {
         .order("name", { ascending: true });
 
       if (err) {
-        setError(err.message);
-        setPharmacies([]);
-      } else {
-        setPharmacies((data || []) as PharmacyRow[]);
+        throw new Error(err.message);
       }
 
-      setLoading(false);
-    };
-
-    fetchPharmacies();
-  }, []);
+      return (data || []) as PharmacyRow[];
+    },
+  });
 
   const markers = useMemo(
     () =>
       pharmacies
         .filter(
           (p) =>
-            typeof p.latitude === "number" && typeof p.longitude === "number",
+            typeof p.latitude === "number" && typeof p.longitude === "number"
         )
         .map((p) => ({
           id: p.id,
@@ -84,7 +78,7 @@ export default function PharmaciesMap() {
             "/" +
             (p.city || ""),
         })),
-    [pharmacies],
+    [pharmacies]
   );
 
   const initialRegion: Region = useMemo(() => {
@@ -120,7 +114,8 @@ export default function PharmaciesMap() {
     return (
       <View className="flex-1 items-center justify-center px-6 bg-gray-50">
         <Text className="text-red-600 text-sm text-center mb-4">
-          Eczaneler yüklenirken bir hata oluştu: {error}
+          Eczaneler yüklenirken bir hata oluştu:{" "}
+          {error instanceof Error ? error.message : String(error)}
         </Text>
         <TouchableOpacity
           onPress={() => router.back()}
@@ -182,11 +177,11 @@ export default function PharmaciesMap() {
       <View className="absolute top-12 left-4 right-4 flex-row justify-between items-center">
         <TouchableOpacity
           onPress={() => router.back()}
-          className="bg-white rounded-full px-4 py-2 shadow-lg"
+          className="bg-white rounded-full px-4 py-2"
         >
           <Text className="text-blue-600 font-semibold">← Geri</Text>
         </TouchableOpacity>
-        <View className="bg-white rounded-full px-4 py-2 shadow-lg">
+        <View className="bg-white rounded-full px-4 py-2">
           <Text className="text-gray-800 font-semibold">Eczaneler Harita</Text>
         </View>
       </View>

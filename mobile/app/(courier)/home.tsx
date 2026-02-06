@@ -1,4 +1,5 @@
 import { View, Text, TouchableOpacity, ScrollView, Alert } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
@@ -45,7 +46,8 @@ export default function CourierHome() {
           </View>
           <TouchableOpacity
             onPress={handleSignOut}
-            className="bg-white/20 px-4 py-2 rounded-lg"
+            className="px-4 py-2 rounded-lg"
+            style={{ backgroundColor: "rgba(255,255,255,0.2)" }}
           >
             <Text className="text-white font-semibold">Çıkış</Text>
           </TouchableOpacity>
@@ -86,15 +88,15 @@ export default function CourierHome() {
           Bugünün Özeti
         </Text>
         <View className="flex-row justify-between space-x-3">
-          <View className="flex-1 bg-white rounded-xl p-4 shadow-sm">
+          <View className="flex-1 bg-white rounded-xl p-4">
             <Text className="text-gray-600 text-sm">Teslim Edilen</Text>
             <Text className="text-2xl font-bold text-gray-900 mt-1">0</Text>
           </View>
-          <View className="flex-1 bg-white rounded-xl p-4 shadow-sm">
+          <View className="flex-1 bg-white rounded-xl p-4">
             <Text className="text-gray-600 text-sm">Kazanç</Text>
             <Text className="text-2xl font-bold text-green-600 mt-1">₺0</Text>
           </View>
-          <View className="flex-1 bg-white rounded-xl p-4 shadow-sm">
+          <View className="flex-1 bg-white rounded-xl p-4">
             <Text className="text-gray-600 text-sm">Mesafe</Text>
             <Text className="text-2xl font-bold text-gray-900 mt-1">0 km</Text>
           </View>
@@ -122,9 +124,13 @@ export default function CourierHome() {
           Hızlı Erişim
         </Text>
         <View className="space-y-3">
-          <TouchableOpacity className="bg-white rounded-xl p-4 flex-row items-center shadow-sm">
+          <TouchableOpacity className="bg-white rounded-xl p-4 flex-row items-center">
             <View className="bg-green-100 w-12 h-12 rounded-full items-center justify-center">
-              <Text className="text-2xl">📜</Text>
+              <Ionicons
+                name="document-text-outline"
+                size={22}
+                color="#047857"
+              />
             </View>
             <View className="ml-4 flex-1">
               <Text className="text-gray-900 font-semibold text-base">
@@ -136,9 +142,9 @@ export default function CourierHome() {
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity className="bg-white rounded-xl p-4 flex-row items-center shadow-sm">
+          <TouchableOpacity className="bg-white rounded-xl p-4 flex-row items-center">
             <View className="bg-blue-100 w-12 h-12 rounded-full items-center justify-center">
-              <Text className="text-2xl">💰</Text>
+              <Ionicons name="wallet-outline" size={22} color="#1D4ED8" />
             </View>
             <View className="ml-4 flex-1">
               <Text className="text-gray-900 font-semibold text-base">
@@ -150,9 +156,9 @@ export default function CourierHome() {
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity className="bg-white rounded-xl p-4 flex-row items-center shadow-sm">
+          <TouchableOpacity className="bg-white rounded-xl p-4 flex-row items-center">
             <View className="bg-purple-100 w-12 h-12 rounded-full items-center justify-center">
-              <Text className="text-2xl">⚙️</Text>
+              <Ionicons name="settings-outline" size={22} color="#6D28D9" />
             </View>
             <View className="ml-4 flex-1">
               <Text className="text-gray-900 font-semibold text-base">

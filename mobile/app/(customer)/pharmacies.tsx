@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { supabase } from "@/lib/supabase";
+import { Ionicons } from "@expo/vector-icons";
+import { useQuery } from "@tanstack/react-query";
 
 type PharmacyRow = {
   id: string;
@@ -24,15 +26,13 @@ type PharmacyRow = {
 
 export default function Pharmacies() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [pharmacies, setPharmacies] = useState<PharmacyRow[]>([]);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchPharmacies = async () => {
-      setLoading(true);
-      setError(null);
-
+  const {
+    data: pharmacies = [] as PharmacyRow[],
+    isLoading: loading,
+    error,
+  } = useQuery<PharmacyRow[], Error>({
+    queryKey: ["pharmacies-list"],
+    queryFn: async () => {
       const { data, error: err } = await (supabase as any)
         .from("pharmacies")
         .select(
@@ -41,17 +41,12 @@ export default function Pharmacies() {
         .order("name", { ascending: true });
 
       if (err) {
-        setError(err.message);
-        setPharmacies([]);
-      } else {
-        setPharmacies((data || []) as PharmacyRow[]);
+        throw new Error(err.message);
       }
 
-      setLoading(false);
-    };
-
-    fetchPharmacies();
-  }, []);
+      return (data || []) as PharmacyRow[];
+    },
+  });
 
   const renderPharmacyItem = ({ item }: { item: PharmacyRow }) => {
     const address = [
@@ -62,22 +57,33 @@ export default function Pharmacies() {
       .filter(Boolean)
       .join(" - ");
 
+    const initial = item.name?.charAt(0)?.toUpperCase() ?? "?";
+
     return (
-      <View className="bg-white rounded-xl border border-gray-200 p-4 mb-3">
-        <Text className="text-lg font-semibold text-gray-900">{item.name}</Text>
-        {item.phone && (
-          <Text className="text-sm text-gray-700 mt-1">{item.phone}</Text>
-        )}
-        {address.length > 0 && (
-          <Text className="text-sm text-gray-600 mt-1">{address}</Text>
-        )}
+      <View className="flex-row items-center bg-white rounded-2xl border border-gray-100 p-4 mb-3">
+        <View className="w-10 h-10 rounded-full bg-emerald-50 items-center justify-center mr-3">
+          <Text className="text-emerald-700 font-semibold">{initial}</Text>
+        </View>
+        <View className="flex-1">
+          <Text className="text-sm font-semibold text-gray-900">
+            {item.name}
+          </Text>
+          {address.length > 0 && (
+            <Text className="text-xs text-gray-600 mt-1" numberOfLines={2}>
+              {address}
+            </Text>
+          )}
+          {item.phone && (
+            <Text className="text-xs text-gray-500 mt-1">{item.phone}</Text>
+          )}
+        </View>
       </View>
     );
   };
 
   return (
     <View className="flex-1 bg-gray-50">
-      <View className="bg-white border-b border-gray-200 px-6 pt-12 pb-3">
+      <View className="bg-white border-b border-gray-200 px-6 pt-12 pb-4">
         <TouchableOpacity onPress={() => router.back()} className="mb-2">
           <Text className="text-blue-600 text-base">← Geri</Text>
         </TouchableOpacity>
@@ -90,9 +96,17 @@ export default function Pharmacies() {
           onPress={() => router.push("/(customer)/pharmacies-map")}
           className="mt-3 self-start bg-blue-50 border border-blue-200 rounded-full px-4 py-2"
         >
-          <Text className="text-blue-700 text-sm font-semibold">
-            🗺️ Haritada Gör
-          </Text>
+          <View className="flex-row items-center">
+            <Ionicons
+              name="map-outline"
+              size={16}
+              color="#1D4ED8"
+              style={{ marginRight: 4 }}
+            />
+            <Text className="text-blue-700 text-sm font-semibold">
+              Haritada Gör
+            </Text>
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -104,7 +118,8 @@ export default function Pharmacies() {
       ) : error ? (
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-red-600 text-sm text-center">
-            Eczaneler yüklenirken bir hata oluştu: {error}
+            Eczaneler yüklenirken bir hata oluştu:{" "}
+            {error instanceof Error ? error.message : String(error)}
           </Text>
         </View>
       ) : pharmacies.length === 0 ? (

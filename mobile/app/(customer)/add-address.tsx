@@ -7,6 +7,7 @@ import {
   ScrollView,
   ActivityIndicator,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
@@ -202,7 +203,12 @@ export default function AddAddress() {
           className="bg-blue-50 border-2 border-blue-300 rounded-xl p-4 mb-4 flex-row items-center justify-between"
         >
           <View className="flex-row items-center flex-1">
-            <Text className="text-3xl mr-3">🗺️</Text>
+            <Ionicons
+              name="map-outline"
+              size={26}
+              color="#1D4ED8"
+              style={{ marginRight: 12 }}
+            />
             <View className="flex-1">
               <Text className="text-blue-700 font-semibold text-base">
                 Haritadan Adres Seç

@@ -47,7 +47,7 @@ export default function Index() {
       profile.role.includes("customer"))
   ) {
     return (
-      <View className="flex-1 items-center justify-center bg-white">
+      <View className="flex-1 items-center justify-center bg-gray-50">
         <Text className="text-lg text-gray-600">Yükleniyor...</Text>
       </View>
     );
@@ -61,98 +61,98 @@ export default function Index() {
     profile.role.includes("courier");
 
   return (
-    <View className="flex-1 items-center justify-center bg-white px-6">
+    <View className="flex-1 bg-gray-50 px-6 justify-center">
       {/* Logo / Başlık */}
-      <View className="mb-16">
-        <Text className="text-5xl font-bold text-blue-600 text-center mb-3">
+      <View className="mb-10 items-center">
+        <Text className="text-xs font-semibold text-emerald-600 uppercase mb-1">
           Nöbet İlaç
         </Text>
-        <Text className="text-base text-gray-600 text-center">
+        <Text className="text-4xl font-bold text-gray-900 text-center mb-2">
           {showPanelSelection
             ? `Hoş geldiniz, ${profile?.full_name}`
-            : "Gece ilaç ihtiyacınız için"}
+            : "Gece ilaç hizmeti"}
+        </Text>
+        <Text className="text-sm text-gray-600 text-center">
+          Reçetelerinizi kolayca yönetmek için giriş yapın.
         </Text>
       </View>
 
       {showPanelSelection ? (
         // Kullanıcı hem customer hem courier - panel seçimi göster
-        <View className="w-full max-w-sm">
-          <Text className="text-center text-gray-700 mb-6 text-base">
+        <View className="w-full max-w-sm self-center bg-white rounded-2xl px-4 py-6 border border-gray-100">
+          <Text className="text-center text-gray-700 mb-4 text-sm">
             Hangi paneli kullanmak istersiniz?
           </Text>
 
           <TouchableOpacity
             onPress={() => router.replace("/(customer)/home")}
-            className="bg-blue-600 rounded-xl py-4 px-6 shadow-sm mb-4"
+            className="bg-emerald-600 rounded-xl py-3 px-6 mb-3"
           >
-            <Text className="text-white text-center text-lg font-semibold">
+            <Text className="text-white text-center text-base font-semibold">
               Müşteri Paneli
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             onPress={() => router.replace("/(courier)/home")}
-            className="bg-green-600 rounded-xl py-4 px-6 shadow-sm"
+            className="bg-green-600 rounded-xl py-3 px-6"
           >
-            <Text className="text-white text-center text-lg font-semibold">
+            <Text className="text-white text-center text-base font-semibold">
               Kurye Paneli
             </Text>
           </TouchableOpacity>
         </View>
       ) : (
         // Normal welcome ekranı
-        <>
+        <View className="w-full max-w-sm self-center">
           {/* Kullanıcı Butonları */}
-          <View className="w-full max-w-sm mb-8">
+          <View className="mb-8 bg-white rounded-2xl px-4 py-6 border border-gray-100">
+            <Text className="text-xs font-semibold text-gray-500 uppercase mb-3">
+              Müşteri
+            </Text>
             <TouchableOpacity
               onPress={() => router.push("/(auth)/customer/login")}
-              className="bg-blue-600 rounded-xl py-4 px-6 shadow-sm mb-4"
+              className="bg-emerald-600 rounded-xl py-3 px-6 mb-3"
             >
-              <Text className="text-white text-center text-lg font-semibold">
+              <Text className="text-white text-center text-base font-semibold">
                 Kullanıcı Girişi
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={() => router.push("/(auth)/customer/register")}
-              className="bg-white border-2 border-blue-600 rounded-xl py-4 px-6"
+              className="bg-white border-2 border-emerald-600 rounded-xl py-3 px-6"
             >
-              <Text className="text-blue-600 text-center text-lg font-semibold">
+              <Text className="text-emerald-600 text-center text-base font-semibold">
                 Kullanıcı Kayıt
               </Text>
             </TouchableOpacity>
           </View>
 
-          {/* Ayırıcı */}
-          <View className="w-full max-w-sm mb-8">
-            <View className="flex-row items-center">
-              <View className="flex-1 h-px bg-gray-300" />
-              <Text className="mx-4 text-gray-500 text-sm">Kurye misiniz?</Text>
-              <View className="flex-1 h-px bg-gray-300" />
-            </View>
-          </View>
-
           {/* Kurye Butonları */}
-          <View className="w-full max-w-sm">
+          <View className="bg-white rounded-2xl px-4 py-6 border border-gray-100">
+            <Text className="text-xs font-semibold text-gray-500 uppercase mb-3">
+              Kurye
+            </Text>
             <TouchableOpacity
               onPress={() => router.push("/(auth)/courier/login")}
-              className="bg-green-600 rounded-xl py-4 px-6 shadow-sm mb-4"
+              className="bg-green-600 rounded-xl py-3 px-6 mb-3"
             >
-              <Text className="text-white text-center text-lg font-semibold">
+              <Text className="text-white text-center text-base font-semibold">
                 Kurye Girişi
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={() => router.push("/(auth)/courier/register")}
-              className="bg-white border-2 border-green-600 rounded-xl py-4 px-6"
+              className="bg-white border-2 border-green-600 rounded-xl py-3 px-6"
             >
-              <Text className="text-green-600 text-center text-lg font-semibold">
+              <Text className="text-green-600 text-center text-base font-semibold">
                 Kurye Kayıt
               </Text>
             </TouchableOpacity>
           </View>
-        </>
+        </View>
       )}
     </View>
   );

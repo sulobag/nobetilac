@@ -111,6 +111,7 @@ export default function PharmacySignupPage() {
           .insert({
             user_id: authData.user.id,
             name,
+            email: email.trim().toLowerCase(),
             phone: phone || null,
             city: city || null,
             district: district || null,
@@ -125,9 +126,8 @@ export default function PharmacySignupPage() {
           throw pharmacyError;
         }
 
-        setSuccess(
-          "Eczane kaydınız oluşturuldu. Artık giriş ekranından giriş yapabilirsiniz."
-        );
+        // Oturum zaten açık, panel sayfasına yönlendir
+        window.location.href = "/";
       } else {
         setSuccess(
           "Hesabınız oluşturuldu. Emailinize doğrulama kodu gönderildi, lütfen kodu girerek hesabınızı onaylayın."
@@ -177,6 +177,7 @@ export default function PharmacySignupPage() {
         .insert({
           user_id: userId,
           name,
+          email: email.trim().toLowerCase(),
           phone: phone || null,
           city: city || null,
           district: district || null,
@@ -191,9 +192,18 @@ export default function PharmacySignupPage() {
         throw pharmacyError;
       }
 
-      setSuccess(
-        "Eczane kaydınız ve hesabınız başarıyla onaylandı. Artık giriş ekranından giriş yapabilirsiniz."
-      );
+      // Doğrulama sonrası kullanıcıyı otomatik olarak giriş yaptır
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      });
+
+      if (signInError) {
+        throw signInError;
+      }
+
+      // Başarılı ise direkt panele gönder
+      window.location.href = "/";
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Bir hata oluştu";
       setError(msg);
