@@ -76,6 +76,26 @@ export default function CustomerProfile() {
           )}
         </View>
 
+        {/* Navigasyon kutuları */}
+        <View className="mt-2">
+          <TouchableOpacity
+            onPress={() => router.push("/(customer)/addresses")}
+            className="flex-row items-center bg-white rounded-2xl border border-gray-100 px-4 py-3 mb-3"
+          >
+            <View className="w-9 h-9 rounded-full bg-emerald-50 items-center justify-center mr-3">
+              <Ionicons name="location-outline" size={18} color="#047857" />
+            </View>
+            <View className="flex-1">
+              <Text className="text-sm font-semibold text-gray-900">
+                Adreslerim
+              </Text>
+              <Text className="text-xs text-gray-600 mt-1">
+                Teslimat adreslerini görüntüleyin ve yönetin.
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+
         {/* Çıkış butonu */}
         <TouchableOpacity
           onPress={handleSignOut}
@@ -89,4 +109,3 @@ export default function CustomerProfile() {
     </View>
   );
 }
-

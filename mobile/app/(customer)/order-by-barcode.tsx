@@ -14,6 +14,10 @@ import {
   Keyboard,
   ScrollView,
 } from "react-native";
+import { Image } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
+import * as FileSystem from "expo-file-system/legacy";
+import { decode as atob } from "base-64";
 import { useRouter } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
@@ -51,6 +55,10 @@ export default function OrderByBarcode() {
   const [prescriptionNo, setPrescriptionNo] = useState("");
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [prescriptionImageUri, setPrescriptionImageUri] = useState<string | null>(
+    null,
+  );
+  const [pickingImage, setPickingImage] = useState(false);
 
   const [addresses, setAddresses] = useState<AddressRow[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(
@@ -238,6 +246,44 @@ export default function OrderByBarcode() {
     return `${km.toFixed(1)} km`;
   };
 
+  const handlePickImage = async () => {
+    try {
+      setPickingImage(true);
+
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "İzin gerekli",
+          "Reçete fotoğrafı eklemek için galeri erişim izni vermelisiniz.",
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.8,
+      });
+
+      if (result.canceled || !result.assets || result.assets.length === 0) {
+        return;
+      }
+
+      const asset = result.assets[0];
+      if (!asset.uri) {
+        Alert.alert("Hata", "Seçilen görüntü işlenemedi.");
+        return;
+      }
+
+      setPrescriptionImageUri(asset.uri);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Bir hata oluştu.";
+      Alert.alert("Hata", msg);
+    } finally {
+      setPickingImage(false);
+    }
+  };
+
   const placeOrderMutation = useMutation({
     mutationFn: async () => {
       if (!user) {
@@ -245,8 +291,10 @@ export default function OrderByBarcode() {
       }
 
       const pn = normalizePrescriptionNo(prescriptionNo);
-      if (!pn) {
-        throw new Error("Lütfen reçete numarasını girin.");
+      if (!pn && !prescriptionImageUri) {
+        throw new Error(
+          "Reçete numarası veya reçete fotoğrafından en az birini girmelisiniz.",
+        );
       }
 
       if (!selectedAddressId) {
@@ -259,15 +307,57 @@ export default function OrderByBarcode() {
         throw new Error("Sipariş verebilmek için bir eczane seçmelisiniz.");
       }
 
+      let prescriptionImagePath: string | null = null;
+
+      if (prescriptionImageUri) {
+        const extMatch = prescriptionImageUri.split(".").pop();
+        const fileExt =
+          (extMatch && extMatch.split("?")[0].toLowerCase()) || "jpg";
+        const fileName = `${user.id}_${Date.now()}.${fileExt}`;
+        const filePath = `prescriptions/${fileName}`;
+
+        // RN/Expo'da en stabil yol: dosyayı base64 oku -> byte array olarak upload et
+        const base64 = await FileSystem.readAsStringAsync(
+          prescriptionImageUri,
+          {
+            encoding: "base64",
+          } as any,
+        );
+
+        const bytes = atob(base64);
+        const byteNumbers = new Array<number>(bytes.length);
+        for (let i = 0; i < bytes.length; i++) {
+          byteNumbers[i] = bytes.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+
+        const { error: uploadError } = (await (supabase as any).storage
+          .from("prescriptions")
+          .upload(filePath, byteArray, {
+            contentType: `image/${fileExt === "jpg" ? "jpeg" : fileExt}`,
+            upsert: false,
+          })) as any;
+
+        if (uploadError) {
+          throw new Error(
+            uploadError.message ||
+              "Reçete fotoğrafı yüklenirken bir hata oluştu.",
+          );
+        }
+
+        prescriptionImagePath = filePath;
+      }
+
       const { error: orderError } = (await (supabase as any)
         .from("orders")
         .insert({
           user_id: user.id,
           address_id: selectedAddressId,
-          prescription_no: pn,
+          prescription_no: pn || null,
           status: "pending",
           note: note.trim() || null,
           pharmacy_id: selectedPharmacyId,
+          prescription_image_path: prescriptionImagePath,
         })) as any;
 
       if (orderError) throw orderError;
@@ -283,6 +373,7 @@ export default function OrderByBarcode() {
     onSuccess: () => {
       setPrescriptionNo("");
       setNote("");
+      setPrescriptionImageUri(null);
       void queryClient.invalidateQueries({ queryKey: ["customer-orders"] });
 
       Alert.alert("Başarılı", "Siparişiniz alındı!", [
@@ -490,17 +581,71 @@ export default function OrderByBarcode() {
               />
             </View>
 
+            <View className="bg-white rounded-2xl border border-gray-100 p-4 mb-6">
+              <View className="flex-row items-center justify-between mb-2">
+                <Text className="text-sm font-medium text-gray-700">
+                  Reçete Fotoğrafı (opsiyonel)
+                </Text>
+                {prescriptionImageUri && (
+                  <TouchableOpacity
+                    onPress={() => setPrescriptionImageUri(null)}
+                    disabled={submitting}
+                  >
+                    <Text className="text-xs text-red-600 font-semibold">
+                      Kaldır
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              {prescriptionImageUri ? (
+                <View className="flex-row items-center">
+                  <Image
+                    source={{ uri: prescriptionImageUri }}
+                    style={{ width: 72, height: 72, borderRadius: 12 }}
+                    contentFit="cover"
+                  />
+                  <TouchableOpacity
+                    onPress={handlePickImage}
+                    disabled={pickingImage || submitting}
+                    className="ml-4 px-4 py-2 rounded-xl border border-gray-200 bg-gray-50"
+                  >
+                    <Text className="text-xs font-semibold text-gray-800">
+                      Değiştir
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  onPress={handlePickImage}
+                  disabled={pickingImage || submitting}
+                  className="border border-dashed border-emerald-300 rounded-xl py-3 px-4 flex-row items-center justify-center bg-emerald-50/40"
+                >
+                  <Text className="text-sm text-emerald-700 font-medium">
+                    {pickingImage
+                      ? "Galeri açılıyor..."
+                      : "Reçete fotoğrafı ekle"}
+                  </Text>
+                </TouchableOpacity>
+              )}
+              <Text className="text-[11px] text-gray-500 mt-2">
+                Fotoğraf eklemek zorunlu değildir, fakat eczanenin reçetenizi
+                daha hızlı kontrol etmesine yardımcı olur.
+              </Text>
+            </View>
+
             <TouchableOpacity
               onPress={handlePlaceOrder}
               disabled={
                 submitting ||
-                !normalizePrescriptionNo(prescriptionNo) ||
+                (!normalizePrescriptionNo(prescriptionNo) &&
+                  !prescriptionImageUri) ||
                 !selectedAddressId ||
                 !selectedPharmacyId
               }
               className={`bg-emerald-600 rounded-xl py-4 ${
                 submitting ||
-                !normalizePrescriptionNo(prescriptionNo) ||
+                (!normalizePrescriptionNo(prescriptionNo) &&
+                  !prescriptionImageUri) ||
                 !selectedPharmacyId
                   ? "opacity-50"
                   : ""

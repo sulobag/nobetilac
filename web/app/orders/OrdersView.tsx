@@ -22,6 +22,7 @@ type OrderRow = {
   status: string;
   created_at: string;
   note?: string | null;
+  prescription_image_path?: string | null;
   customer_name?: string | null;
   customer_phone?: string | null;
   addresses?: {
@@ -53,6 +54,8 @@ export default function OrdersView({ onSignOut }: Props) {
     district: string | null;
   } | null>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [imageLightboxUrl, setImageLightboxUrl] = useState<string | null>(null);
   const {
     data: orders = [],
     isLoading,
@@ -99,6 +102,7 @@ export default function OrdersView({ onSignOut }: Props) {
             id,
             user_id,
             prescription_no,
+            prescription_image_path,
             note,
             status,
             created_at,
@@ -184,6 +188,13 @@ export default function OrdersView({ onSignOut }: Props) {
       void supabase.removeChannel(channel);
     };
   }, [refetch]);
+
+  useEffect(() => {
+    void (async () => {
+      const { data } = await supabase.auth.getSession();
+      setAccessToken(data.session?.access_token ?? null);
+    })();
+  }, []);
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
@@ -316,10 +327,15 @@ export default function OrdersView({ onSignOut }: Props) {
                         {new Date(order.created_at).toLocaleString("tr-TR")}
                       </p>
                     </div>
-                    <div className="flex items-center">
+                    <div className="flex flex-col justify-center gap-1">
                       <span className="inline-flex px-2 py-1 rounded-md font-mono text-[12px] bg-slate-100 text-slate-900 border border-slate-200">
-                        {order.prescription_no}
+                        {order.prescription_no || "-"}
                       </span>
+                      {order.prescription_image_path && (
+                        <span className="inline-flex px-2 py-0.5 rounded-md text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          Fotoğraf var
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center">
                       <span className="text-slate-700">
@@ -440,13 +456,44 @@ export default function OrdersView({ onSignOut }: Props) {
                   Reçete / Not
                 </p>
                 <p className="font-mono text-[13px] text-slate-900">
-                  {selectedOrder.prescription_no}
+                  {selectedOrder.prescription_no || "-"}
                 </p>
                 <p className="mt-2 text-xs text-slate-600">
                   {selectedOrder.note
                     ? `Not: ${selectedOrder.note}`
                     : "Herhangi bir not eklenmemiş."}
                 </p>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <p className="text-[11px] uppercase tracking-wide mb-1 text-slate-500">
+                  Reçete Fotoğrafı
+                </p>
+                {selectedOrder.prescription_image_path && accessToken ? (
+                  <button
+                    type="button"
+                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white overflow-hidden max-h-72 flex items-center justify-center hover:bg-slate-50 transition-colors"
+                    onClick={() =>
+                      setImageLightboxUrl(
+                        `/api/prescription-image?orderId=${selectedOrder.id}&token=${encodeURIComponent(
+                          accessToken,
+                        )}`,
+                      )
+                    }
+                  >
+                    <img
+                      src={`/api/prescription-image?orderId=${selectedOrder.id}&token=${encodeURIComponent(
+                        accessToken,
+                      )}`}
+                      alt="Reçete fotoğrafı"
+                      className="max-h-72 w-auto object-contain"
+                    />
+                  </button>
+                ) : (
+                  <p className="text-xs text-slate-500">
+                    Bu sipariş için reçete fotoğrafı eklenmemiş.
+                  </p>
+                )}
               </div>
 
               <div className="md:col-span-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
@@ -490,6 +537,39 @@ export default function OrdersView({ onSignOut }: Props) {
                   Onayla
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reçete fotoğrafı lightbox */}
+      {imageLightboxUrl && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setImageLightboxUrl(null)}
+        >
+          <div
+            className="w-full max-w-5xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-semibold text-white">
+                Reçete Fotoğrafı
+              </p>
+              <button
+                type="button"
+                onClick={() => setImageLightboxUrl(null)}
+                className="px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-semibold"
+              >
+                Kapat
+              </button>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-black/30 overflow-hidden flex items-center justify-center">
+              <img
+                src={imageLightboxUrl}
+                alt="Reçete fotoğrafı"
+                className="max-h-[80vh] w-auto object-contain"
+              />
             </div>
           </div>
         </div>

@@ -169,257 +169,287 @@ export default function AddAddress() {
   };
 
   return (
-    <ScrollView className="flex-1 bg-white">
-      <View className="p-6">
+    <ScrollView className="flex-1 bg-gray-50">
+      <View className="pt-12 px-6 pb-6">
         {/* Header */}
-        <View className="mt-12 mb-8">
-          {!isFirstAddress && (
-            <TouchableOpacity onPress={() => router.back()} className="mb-4">
-              <Text className="text-blue-600 text-base">← Geri</Text>
-            </TouchableOpacity>
-          )}
-          <Text className="text-3xl font-bold text-gray-900">
-            {isFirstAddress ? "Adres Ekle" : "Yeni Adres"}
-          </Text>
-          <Text className="text-gray-600 mt-2">
-            {isFirstAddress
-              ? "Devam etmek için bir adres ekleyin"
-              : "Teslimat adresi bilgilerini girin"}
-          </Text>
+        <View className="mb-5 flex-row items-center justify-between">
+          <View className="flex-row items-center">
+            {!isFirstAddress && (
+              <TouchableOpacity
+                onPress={() => router.back()}
+                className="mr-3 rounded-full bg-white border border-gray-200 w-9 h-9 items-center justify-center"
+              >
+                <Ionicons name="chevron-back" size={20} color="#047857" />
+              </TouchableOpacity>
+            )}
+            <View>
+              <Text className="text-xs font-semibold text-emerald-600 uppercase">
+                Adres
+              </Text>
+              <Text className="text-2xl font-bold text-gray-900 mt-1">
+                {isFirstAddress ? "Adres Ekle" : "Yeni Adres"}
+              </Text>
+            </View>
+          </View>
         </View>
 
-        {/* Harita Butonu */}
-        <TouchableOpacity
-          onPress={() =>
-            router.replace({
-              pathname: "/(customer)/select-location",
-              params: {
-                // İlk adres akışını kaybetmemek için parametreyi taşı
-                ...(isFirstAddress ? { firstAddress: "true" } : {}),
-                from: "add-address",
-              },
-            })
-          }
-          className="bg-blue-50 border-2 border-blue-300 rounded-xl p-4 mb-4 flex-row items-center justify-between"
-        >
-          <View className="flex-row items-center flex-1">
-            <Ionicons
-              name="map-outline"
-              size={26}
-              color="#1D4ED8"
-              style={{ marginRight: 12 }}
-            />
-            <View className="flex-1">
-              <Text className="text-blue-700 font-semibold text-base">
-                Haritadan Adres Seç
-              </Text>
-              <Text className="text-blue-600 text-sm mt-1">
-                {latitude && longitude
-                  ? "✓ Konum seçildi"
-                  : "Haritada konumunuzu işaretleyin"}
-              </Text>
-            </View>
-          </View>
-          <Text className="text-blue-600 text-xl">→</Text>
-        </TouchableOpacity>
-
-        {/* Form */}
-        <View className="space-y-4">
-          {/* Adres Başlığı */}
-          <View>
-            <Text className="text-sm font-medium text-gray-700 mb-2">
-              Adres Başlığı *
-            </Text>
-            <View className="flex-row gap-2">
-              {titleOptions.map((option) => (
-                <TouchableOpacity
-                  key={option}
-                  onPress={() => setTitle(option)}
-                  className={`px-6 py-3 rounded-lg border-2 ${
-                    title === option
-                      ? "bg-blue-600 border-blue-600"
-                      : "bg-white border-gray-300"
-                  }`}
-                >
-                  <Text
-                    className={`text-base ${
-                      title === option
-                        ? "text-white font-semibold"
-                        : "text-gray-700"
-                    }`}
-                  >
-                    {option}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          {/* Özel Başlık (Diğer seçiliyse) */}
-          {title === "Diğer" && (
-            <View>
-              <Text className="text-sm font-medium text-gray-700 mb-2">
-                Özel Adres Başlığı *
-              </Text>
-              <TextInput
-                className="border border-gray-300 rounded-xl px-4 py-3 text-base"
-                placeholder="Örn: Annemin Evi, Ofis 2, Villa..."
-                value={customTitle}
-                onChangeText={setCustomTitle}
-                autoCapitalize="words"
-              />
-            </View>
-          )}
-
-          {/* Şehir */}
-          <View>
-            <Text className="text-sm font-medium text-gray-700 mb-2">
-              Şehir *
-            </Text>
-            <TextInput
-              className="border border-gray-300 rounded-xl px-4 py-3 text-base"
-              placeholder="İstanbul"
-              value={city}
-              onChangeText={setCity}
-            />
-          </View>
-
-          {/* İlçe */}
-          <View>
-            <Text className="text-sm font-medium text-gray-700 mb-2">
-              İlçe/Semt *
-            </Text>
-            <TextInput
-              className="border border-gray-300 rounded-xl px-4 py-3 text-base"
-              placeholder="Kadıköy"
-              value={district}
-              onChangeText={setDistrict}
-            />
-          </View>
-
-          {/* Mahalle */}
-          <View>
-            <Text className="text-sm font-medium text-gray-700 mb-2">
-              Mahalle *
-            </Text>
-            <TextInput
-              className="border border-gray-300 rounded-xl px-4 py-3 text-base"
-              placeholder="Caferağa Mahallesi"
-              value={neighborhood}
-              onChangeText={setNeighborhood}
-            />
-          </View>
-
-          {/* Cadde/Sokak */}
-          <View>
-            <Text className="text-sm font-medium text-gray-700 mb-2">
-              Cadde/Sokak *
-            </Text>
-            <TextInput
-              className="border border-gray-300 rounded-xl px-4 py-3 text-base"
-              placeholder="Moda Caddesi"
-              value={street}
-              onChangeText={setStreet}
-            />
-          </View>
-
-          {/* Bina No */}
-          <View>
-            <Text className="text-sm font-medium text-gray-700 mb-2">
-              Bina No *
-            </Text>
-            <TextInput
-              className="border border-gray-300 rounded-xl px-4 py-3 text-base"
-              placeholder="42"
-              value={buildingNo}
-              onChangeText={setBuildingNo}
-            />
-          </View>
-
-          {/* Kat & Daire (Yan yana) */}
-          <View className="flex-row gap-3">
-            <View className="flex-1">
-              <Text className="text-sm font-medium text-gray-700 mb-2">
-                Kat
-              </Text>
-              <TextInput
-                className="border border-gray-300 rounded-xl px-4 py-3 text-base"
-                placeholder="3"
-                value={floor}
-                onChangeText={setFloor}
-              />
-            </View>
-            <View className="flex-1">
-              <Text className="text-sm font-medium text-gray-700 mb-2">
-                Daire No
-              </Text>
-              <TextInput
-                className="border border-gray-300 rounded-xl px-4 py-3 text-base"
-                placeholder="5"
-                value={apartmentNo}
-                onChangeText={setApartmentNo}
-              />
-            </View>
-          </View>
-
-          {/* Adres Tarifi */}
-          <View>
-            <Text className="text-sm font-medium text-gray-700 mb-2">
-              Adres Tarifi
-            </Text>
-            <TextInput
-              className="border border-gray-300 rounded-xl px-4 py-3 text-base"
-              placeholder="Kırmızı binadan sonra sağdaki siyah kapı..."
-              value={addressDescription}
-              onChangeText={setAddressDescription}
-              multiline
-              numberOfLines={3}
-              textAlignVertical="top"
-            />
-          </View>
-
-          {/* Varsayılan Adres */}
+        {/* Ana kart */}
+        <View className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+          {/* Harita Butonu */}
           <TouchableOpacity
-            onPress={() => setIsDefault(!isDefault)}
-            className="flex-row items-center py-3"
+            onPress={() =>
+              router.replace({
+                pathname: "/(customer)/select-location",
+                params: {
+                  ...(isFirstAddress ? { firstAddress: "true" } : {}),
+                  from: "add-address",
+                },
+              })
+            }
+            className="bg-emerald-50 border-b border-emerald-100 px-4 py-4 flex-row items-center justify-between"
           >
-            <View
-              className={`w-6 h-6 rounded border-2 mr-3 items-center justify-center ${
-                isDefault ? "bg-blue-600 border-blue-600" : "border-gray-300"
-              }`}
-            >
-              {isDefault && <Text className="text-white text-sm">✓</Text>}
+            <View className="flex-row items-center flex-1">
+              <View className="w-9 h-9 rounded-full bg-white border border-emerald-100 items-center justify-center mr-3">
+                <Ionicons
+                  name="map-outline"
+                  size={22}
+                  color="#047857"
+                />
+              </View>
+              <View className="flex-1">
+                <Text className="text-emerald-800 font-semibold text-sm">
+                  Haritadan adres seç
+                </Text>
+                <Text className="text-emerald-700 text-xs mt-1">
+                  {latitude && longitude
+                    ? "✓ Konum seçildi"
+                    : "Haritada konumunuzu işaretleyin"}
+                </Text>
+              </View>
             </View>
-            <Text className="text-base text-gray-700">
-              Varsayılan adres olarak kaydet
-            </Text>
+            <Ionicons name="chevron-forward" size={18} color="#047857" />
           </TouchableOpacity>
 
-          {/* Kaydet Butonu */}
+          {/* Form */}
+          <View className="px-4 py-5 space-y-4">
+            {/* Adres Başlığı */}
+            <View>
+              <Text className="text-xs font-semibold text-gray-500 mb-2 uppercase">
+                Adres Başlığı *
+              </Text>
+              <View className="flex-row gap-2">
+                {titleOptions.map((option) => (
+                  <TouchableOpacity
+                    key={option}
+                    onPress={() => setTitle(option)}
+                    className={`flex-1 flex-row items-center justify-center px-3 py-2 rounded-full border ${
+                      title === option
+                        ? "bg-emerald-600 border-emerald-600"
+                        : "bg-white border-gray-200"
+                    }`}
+                  >
+                    <Ionicons
+                      name={
+                        option === "Ev"
+                          ? "home-outline"
+                          : option === "İş"
+                            ? "briefcase-outline"
+                            : "location-outline"
+                      }
+                      size={16}
+                      color={title === option ? "#ECFDF5" : "#047857"}
+                      style={{ marginRight: 6 }}
+                    />
+                    <Text
+                      className={`text-xs font-semibold ${
+                        title === option ? "text-emerald-50" : "text-gray-800"
+                      }`}
+                    >
+                      {option}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Özel Başlık (Diğer seçiliyse) */}
+            {title === "Diğer" && (
+              <View>
+                <Text className="text-xs font-semibold text-gray-500 mb-2 uppercase">
+                  Özel Adres Başlığı *
+                </Text>
+                <TextInput
+                  className="border border-gray-200 rounded-2xl px-4 py-3 text-sm bg-gray-50"
+                  placeholder="Örn: Annemin Evi, Ofis 2, Villa..."
+                  value={customTitle}
+                  onChangeText={setCustomTitle}
+                  autoCapitalize="words"
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
+            )}
+
+            {/* Şehir */}
+            <View>
+              <Text className="text-xs font-semibold text-gray-500 mb-2 uppercase">
+                Şehir *
+              </Text>
+              <TextInput
+                className="border border-gray-200 rounded-2xl px-4 py-3 text-sm bg-gray-50"
+                placeholder="İstanbul"
+                value={city}
+                onChangeText={setCity}
+                placeholderTextColor="#9CA3AF"
+              />
+            </View>
+
+            {/* İlçe */}
+            <View>
+              <Text className="text-xs font-semibold text-gray-500 mb-2 uppercase">
+                İlçe/Semt *
+              </Text>
+              <TextInput
+                className="border border-gray-200 rounded-2xl px-4 py-3 text-sm bg-gray-50"
+                placeholder="Kadıköy"
+                value={district}
+                onChangeText={setDistrict}
+                placeholderTextColor="#9CA3AF"
+              />
+            </View>
+
+            {/* Mahalle */}
+            <View>
+              <Text className="text-xs font-semibold text-gray-500 mb-2 uppercase">
+                Mahalle *
+              </Text>
+              <TextInput
+                className="border border-gray-200 rounded-2xl px-4 py-3 text-sm bg-gray-50"
+                placeholder="Caferağa Mahallesi"
+                value={neighborhood}
+                onChangeText={setNeighborhood}
+                placeholderTextColor="#9CA3AF"
+              />
+            </View>
+
+            {/* Cadde/Sokak */}
+            <View>
+              <Text className="text-xs font-semibold text-gray-500 mb-2 uppercase">
+                Cadde/Sokak *
+              </Text>
+              <TextInput
+                className="border border-gray-200 rounded-2xl px-4 py-3 text-sm bg-gray-50"
+                placeholder="Moda Caddesi"
+                value={street}
+                onChangeText={setStreet}
+                placeholderTextColor="#9CA3AF"
+              />
+            </View>
+
+            {/* Bina No */}
+            <View>
+              <Text className="text-xs font-semibold text-gray-500 mb-2 uppercase">
+                Bina No *
+              </Text>
+              <TextInput
+                className="border border-gray-200 rounded-2xl px-4 py-3 text-sm bg-gray-50"
+                placeholder="42"
+                value={buildingNo}
+                onChangeText={setBuildingNo}
+                placeholderTextColor="#9CA3AF"
+              />
+            </View>
+
+            {/* Kat & Daire (Yan yana) */}
+            <View className="flex-row gap-3">
+              <View className="flex-1">
+                <Text className="text-xs font-semibold text-gray-500 mb-2 uppercase">
+                  Kat
+                </Text>
+                <TextInput
+                  className="border border-gray-200 rounded-2xl px-4 py-3 text-sm bg-gray-50"
+                  placeholder="3"
+                  value={floor}
+                  onChangeText={setFloor}
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
+              <View className="flex-1">
+                <Text className="text-xs font-semibold text-gray-500 mb-2 uppercase">
+                  Daire No
+                </Text>
+                <TextInput
+                  className="border border-gray-200 rounded-2xl px-4 py-3 text-sm bg-gray-50"
+                  placeholder="5"
+                  value={apartmentNo}
+                  onChangeText={setApartmentNo}
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
+            </View>
+
+            {/* Adres Tarifi */}
+            <View>
+              <Text className="text-xs font-semibold text-gray-500 mb-2 uppercase">
+                Adres Tarifi
+              </Text>
+              <TextInput
+                className="border border-gray-200 rounded-2xl px-4 py-3 text-sm bg-gray-50"
+                placeholder="Kırmızı binadan sonra sağdaki siyah kapı..."
+                value={addressDescription}
+                onChangeText={setAddressDescription}
+                multiline
+                numberOfLines={3}
+                textAlignVertical="top"
+                placeholderTextColor="#9CA3AF"
+              />
+            </View>
+
+            {/* Varsayılan Adres */}
+            <TouchableOpacity
+              onPress={() => setIsDefault(!isDefault)}
+              className="flex-row items-center py-2"
+            >
+              <View
+                className={`w-6 h-6 rounded-full mr-3 items-center justify-center border ${
+                  isDefault ? "bg-emerald-600 border-emerald-600" : "border-gray-300"
+                }`}
+              >
+                {isDefault && (
+                  <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+                )}
+              </View>
+              <Text className="text-sm text-gray-800">
+                Varsayılan adres olarak kaydet
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Kaydet Butonu + Bilgi */}
+        <View className="mt-5">
           <TouchableOpacity
             onPress={handleSave}
             disabled={loading}
-            className={`bg-blue-600 rounded-xl py-4 mt-6 ${
-              loading ? "opacity-50" : ""
+            className={`bg-emerald-600 rounded-2xl py-4 flex-row items-center justify-center ${
+              loading ? "opacity-60" : ""
             }`}
           >
             {loading ? (
-              <View className="flex-row items-center justify-center">
-                <ActivityIndicator color="white" className="mr-2" />
-                <Text className="text-white text-center text-lg font-semibold">
+              <View className="flex-row items-center">
+                <ActivityIndicator color="white" style={{ marginRight: 8 }} />
+                <Text className="text-white text-base font-semibold">
                   {geocoding ? "Konum hesaplanıyor..." : "Kaydediliyor..."}
                 </Text>
               </View>
             ) : (
-              <Text className="text-white text-center text-lg font-semibold">
+              <Text className="text-white text-base font-semibold">
                 Adresi Kaydet
               </Text>
             )}
           </TouchableOpacity>
 
-          {/* Info */}
-          <View className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <Text className="text-sm text-gray-700">
+          <View className="mt-3 bg-emerald-50 border border-emerald-100 rounded-2xl p-3">
+            <Text className="text-xs text-emerald-900">
               💡 <Text className="font-semibold">Bilgi:</Text> Konum bilgisi
               otomatik olarak hesaplanacaktır. Bu işlem birkaç saniye sürebilir.
             </Text>

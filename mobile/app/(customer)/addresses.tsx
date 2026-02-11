@@ -15,6 +15,23 @@ import { Database } from "@/types/database.types";
 
 type Address = Database["public"]["Tables"]["addresses"]["Row"];
 
+const getAddressIconName = (
+  rawTitle: string | null,
+): keyof typeof Ionicons.glyphMap => {
+  if (!rawTitle) return "location-outline";
+  const normalized = rawTitle.toLocaleLowerCase("tr-TR");
+
+  if (normalized.startsWith("ev")) {
+    return "home-outline";
+  }
+
+  if (normalized.startsWith("iş") || normalized.startsWith("is")) {
+    return "briefcase-outline";
+  }
+
+  return "location-outline";
+};
+
 export default function Addresses() {
   const router = useRouter();
   const { user } = useAuth();
@@ -91,19 +108,24 @@ export default function Addresses() {
       item.title === "Diğer" && item.custom_title
         ? item.custom_title
         : item.title;
+    const iconName = getAddressIconName(item.title);
 
     return (
       <View className="bg-white border border-gray-100 rounded-2xl p-4 mb-3">
-        <View className="flex-row justify-between items-center mb-2">
+        <View className="flex-row justify-between items-center mb-3">
           <View className="flex-row items-center">
-            <View className="w-9 h-9 rounded-full bg-emerald-50 items-center justify-center mr-2">
-              <Text className="text-emerald-700 font-semibold">
-                {title?.charAt(0).toUpperCase()}
-              </Text>
+            <View className="w-10 h-10 rounded-full bg-emerald-50 items-center justify-center mr-3">
+              <Ionicons name={iconName} size={20} color="#047857" />
             </View>
             <Text className="text-sm font-semibold text-gray-900">{title}</Text>
             {item.is_default && (
-              <View className="bg-emerald-50 rounded-full px-3 py-1 ml-2">
+              <View className="bg-emerald-50 rounded-full px-3 py-1 ml-2 flex-row items-center">
+                <Ionicons
+                  name="star"
+                  size={12}
+                  color="#047857"
+                  style={{ marginRight: 4 }}
+                />
                 <Text className="text-xs font-semibold text-emerald-700">
                   Varsayılan
                 </Text>
@@ -168,20 +190,30 @@ export default function Addresses() {
           {!item.is_default && (
             <TouchableOpacity
               onPress={() => handleSetDefault(item)}
-              className="flex-1 bg-emerald-50 border border-emerald-200 rounded-lg py-2"
+              className="flex-1 bg-emerald-50 border border-emerald-200 rounded-full py-2 px-3 flex-row items-center justify-center"
             >
-              <Text className="text-emerald-700 text-center text-xs font-semibold">
+              <Ionicons
+                name="star-outline"
+                size={14}
+                color="#047857"
+                style={{ marginRight: 6 }}
+              />
+              <Text className="text-emerald-700 text-xs font-semibold">
                 Varsayılan Yap
               </Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity
             onPress={() => handleDelete(item)}
-            className="bg-red-50 border border-red-200 rounded-lg py-2 px-4"
+            className="bg-red-50 border border-red-200 rounded-full py-2 px-4 flex-row items-center justify-center"
           >
-            <Text className="text-red-700 text-center text-xs font-semibold">
-              Sil
-            </Text>
+            <Ionicons
+              name="trash-outline"
+              size={14}
+              color="#B91C1C"
+              style={{ marginRight: 6 }}
+            />
+            <Text className="text-red-700 text-xs font-semibold">Sil</Text>
           </TouchableOpacity>
         </View>
 

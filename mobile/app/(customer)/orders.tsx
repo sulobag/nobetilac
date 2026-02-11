@@ -9,6 +9,7 @@ import {
   Modal,
   ScrollView,
 } from "react-native";
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { supabase } from "@/lib/supabase";
@@ -21,6 +22,7 @@ type OrderRow = {
   prescription_no: string;
   created_at: string;
   note?: string | null;
+   prescription_image_path?: string | null;
   pharmacies?: {
     name: string | null;
     city: string | null;
@@ -41,6 +43,8 @@ export default function Orders() {
   const { user } = useAuth();
 
   const [selectedOrder, setSelectedOrder] = useState<OrderRow | null>(null);
+  const [prescriptionImageUrl, setPrescriptionImageUrl] = useState<string | null>(null);
+  const [loadingPrescriptionImage, setLoadingPrescriptionImage] = useState(false);
 
   const {
     data: orders = [],
@@ -63,6 +67,7 @@ export default function Orders() {
             prescription_no,
             created_at,
             note,
+            prescription_image_path,
             pharmacies:pharmacy_id (
               name,
               city,
@@ -164,6 +169,11 @@ export default function Orders() {
           Not: {item.note}
         </Text>
       )}
+      {item.prescription_image_path && (
+        <Text className="mt-1 text-[11px] text-emerald-700">
+          Reçete fotoğrafı eklendi
+        </Text>
+      )}
     </TouchableOpacity>
   );
 
@@ -234,7 +244,11 @@ export default function Orders() {
         visible={!!selectedOrder}
         transparent
         animationType="fade"
-        onRequestClose={() => setSelectedOrder(null)}
+        onRequestClose={() => {
+          setSelectedOrder(null);
+          setPrescriptionImageUrl(null);
+          setLoadingPrescriptionImage(false);
+        }}
       >
         <View className="flex-1 bg-black/40 justify-center px-6">
           <View className="bg-white rounded-2xl p-5 max-h-[80%]">
@@ -322,8 +336,71 @@ export default function Orders() {
                   </Text>
                 </View>
 
+                {selectedOrder.prescription_image_path && (
+                  <View className="border-t border-gray-200 pt-3 mt-3">
+                    <Text className="text-xs font-semibold text-gray-500 uppercase mb-2">
+                      Reçete Fotoğrafı
+                    </Text>
+                    {prescriptionImageUrl ? (
+                      <View className="mt-1 rounded-lg border border-gray-200 bg-gray-50 overflow-hidden max-h-72 items-center justify-center">
+                        <Image
+                          source={{ uri: prescriptionImageUrl }}
+                          style={{ width: "100%", height: 260 }}
+                          contentFit="contain"
+                        />
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        onPress={async () => {
+                          try {
+                            setLoadingPrescriptionImage(true);
+                            const { data } = await supabase.auth.getSession();
+                            const token = data.session?.access_token;
+                            if (!token) {
+                              Alert.alert(
+                                "Hata",
+                                "Oturum bilgisi alınamadı. Lütfen tekrar giriş yapın.",
+                              );
+                              return;
+                            }
+
+                            const baseUrl =
+                              process.env.EXPO_PUBLIC_WEB_BASE_URL ??
+                              "http://localhost:3000";
+                            const url = `${baseUrl}/api/prescription-image?orderId=${selectedOrder.id}&token=${encodeURIComponent(
+                              token,
+                            )}`;
+                            setPrescriptionImageUrl(url);
+                          } catch (e) {
+                            const msg =
+                              e instanceof Error ? e.message : String(e);
+                            Alert.alert(
+                              "Hata",
+                              `Reçete fotoğrafı açılırken bir sorun oluştu.\n\nDetay: ${msg}`,
+                            );
+                          } finally {
+                            setLoadingPrescriptionImage(false);
+                          }
+                        }}
+                        disabled={loadingPrescriptionImage}
+                        className="self-start mt-1 rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2"
+                      >
+                        <Text className="text-xs font-semibold text-emerald-700">
+                          {loadingPrescriptionImage
+                            ? "Yükleniyor..."
+                            : "Reçete fotoğrafını görüntüle"}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
+
                 <TouchableOpacity
-                  onPress={() => setSelectedOrder(null)}
+                  onPress={() => {
+                    setSelectedOrder(null);
+                    setPrescriptionImageUrl(null);
+                    setLoadingPrescriptionImage(false);
+                  }}
                   className="mt-5 self-end px-4 py-2 rounded-lg bg-gray-900"
                 >
                   <Text className="text-white text-sm font-semibold">
