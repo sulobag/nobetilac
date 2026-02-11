@@ -3,6 +3,7 @@ import { Session, User as SupabaseUser } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import type { Database } from "@/types/database.types";
 import { becomeCourier as becomeCourierHelper } from "./becomeCourierHelper";
+import { registerForPushNotificationsAsync } from "@/utils/pushNotifications";
 
 type UserProfile = Database["public"]["Tables"]["users"]["Row"];
 
@@ -66,6 +67,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (data && (data as UserProfile).role.includes("customer")) {
         await checkUserAddresses(userId);
       }
+
+      // Push token kaydet
+      registerForPushNotificationsAsync(userId).catch((err) =>
+        console.log("Push token kaydı başarısız (cihaz dışı ortam olabilir):", err),
+      );
     } catch (error: unknown) {
       console.error("Profil yüklenirken hata:", error);
 

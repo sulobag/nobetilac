@@ -14,8 +14,8 @@ import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
-import { useQuery } from "@tanstack/react-query";
-import React, { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import React, { useEffect, useState } from "react";
 
 type OrderRow = {
   id: string;
@@ -41,9 +41,8 @@ type OrderRow = {
 
 export default function CustomerHome() {
   const router = useRouter();
-  const { profile } = useAuth();
-
-  const { user } = useAuth();
+  const { profile, user } = useAuth();
+  const queryClient = useQueryClient();
   const [selectedOrder, setSelectedOrder] = useState<OrderRow | null>(null);
   const [prescriptionImageUrl, setPrescriptionImageUrl] = useState<string | null>(
     null,
@@ -97,6 +96,33 @@ export default function CustomerHome() {
       return (data || []) as OrderRow[];
     },
   });
+
+  // Gerçek zamanlı sipariş güncellemeleri
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = (supabase as any)
+      .channel(`home_orders_${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "orders",
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          void queryClient.invalidateQueries({
+            queryKey: ["customer-active-orders", user.id],
+          });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [user, queryClient]);
 
   const getStatusLabel = (status: string) => {
     if (status === "approved") return "Onaylandı";

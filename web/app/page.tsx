@@ -89,8 +89,8 @@ export default function HomePage() {
 
   if (checkingSession) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-full max-w-md bg-slate-900 border border-slate-700 rounded-2xl p-8 shadow-xl">
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="w-full max-w-md bg-slate-900 border border-slate-700 rounded-2xl p-6 sm:p-8 shadow-xl">
           <p className="text-sm text-slate-300 text-center">
             Oturum kontrol ediliyor...
           </p>
@@ -104,12 +104,12 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="w-full max-w-md bg-slate-900 border border-slate-700 rounded-2xl p-8 shadow-xl">
-        <h1 className="text-2xl font-bold mb-2 text-center text-emerald-400">
+    <div className="min-h-screen flex items-center justify-center px-4">
+      <div className="w-full max-w-md bg-slate-900 border border-slate-700 rounded-2xl p-6 sm:p-8 shadow-xl">
+        <h1 className="text-xl sm:text-2xl font-bold mb-2 text-center text-emerald-400">
           Eczane Paneli
         </h1>
-        <p className="text-sm text-slate-300 mb-6 text-center">
+        <p className="text-xs sm:text-sm text-slate-300 mb-6 text-center">
           Reçete numarası ile gelen siparişleri onaylayın.
         </p>
 
@@ -118,7 +118,7 @@ export default function HomePage() {
             <label className="block text-sm mb-1 text-slate-200">Email</label>
             <input
               type="email"
-              className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
               placeholder="eczane@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -129,7 +129,7 @@ export default function HomePage() {
             <label className="block text-sm mb-1 text-slate-200">Şifre</label>
             <input
               type="password"
-              className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -145,7 +145,7 @@ export default function HomePage() {
           <button
             onClick={handleLogin}
             disabled={loading}
-            className="w-full rounded-lg bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-semibold py-2 text-sm transition-colors"
+            className="w-full rounded-lg bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-semibold py-2.5 text-sm transition-colors"
           >
             {loading ? "Giriş yapılıyor..." : "Giriş Yap"}
           </button>

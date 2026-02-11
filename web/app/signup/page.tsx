@@ -214,186 +214,197 @@ export default function PharmacySignupPage() {
 
   if (step === "verify") {
     return (
-      <div className="w-full max-w-md bg-slate-900 border border-slate-700 rounded-2xl p-8 shadow-xl">
-        <h1 className="text-2xl font-bold mb-2 text-center text-emerald-400">
-          Email Doğrulama
-        </h1>
-        <p className="text-sm text-slate-300 mb-6 text-center">
-          {email} adresine gönderilen doğrulama kodunu girerek hesabınızı
-          onaylayın.
-        </p>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm mb-1 text-slate-200">
-              Doğrulama Kodu
-            </label>
-            <input
-              className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 tracking-widest"
-              placeholder="123456"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-            />
-          </div>
-
-          {error && (
-            <p className="text-sm text-red-400 bg-red-950/40 border border-red-900 rounded-lg px-3 py-2">
-              {error}
-            </p>
-          )}
-
-          {success && (
-            <p className="text-sm text-emerald-300 bg-emerald-950/40 border border-emerald-800 rounded-lg px-3 py-2">
-              {success}
-            </p>
-          )}
-
-          <button
-            onClick={handleVerifyCode}
-            disabled={loading}
-            className="w-full rounded-lg bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-semibold py-2 text-sm transition-colors"
-          >
-            {loading ? "Onaylanıyor..." : "Kodu Onayla"}
-          </button>
-
-          <p className="mt-2 text-xs text-slate-400 text-center">
-            Kodu almadıysanız birkaç dakika bekleyip tekrar deneyin.
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="w-full max-w-md bg-slate-900 border border-slate-700 rounded-2xl p-6 sm:p-8 shadow-xl">
+          <h1 className="text-xl sm:text-2xl font-bold mb-2 text-center text-emerald-400">
+            Email Doğrulama
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-300 mb-6 text-center">
+            {email} adresine gönderilen doğrulama kodunu girerek hesabınızı
+            onaylayın.
           </p>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm mb-1 text-slate-200">
+                Doğrulama Kodu
+              </label>
+              <input
+                className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 tracking-widest"
+                placeholder="123456"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+              />
+            </div>
+
+            {error && (
+              <p className="text-sm text-red-400 bg-red-950/40 border border-red-900 rounded-lg px-3 py-2">
+                {error}
+              </p>
+            )}
+
+            {success && (
+              <p className="text-sm text-emerald-300 bg-emerald-950/40 border border-emerald-800 rounded-lg px-3 py-2">
+                {success}
+              </p>
+            )}
+
+            <button
+              onClick={handleVerifyCode}
+              disabled={loading}
+              className="w-full rounded-lg bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-semibold py-2.5 text-sm transition-colors"
+            >
+              {loading ? "Onaylanıyor..." : "Kodu Onayla"}
+            </button>
+
+            <p className="mt-2 text-xs text-slate-400 text-center">
+              Kodu almadıysanız birkaç dakika bekleyip tekrar deneyin.
+            </p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-xl bg-slate-900 border border-slate-700 rounded-2xl p-8 shadow-xl">
-      <h1 className="text-2xl font-bold mb-2 text-center text-emerald-400">
-        Eczane Kayıt
-      </h1>
-      <p className="text-sm text-slate-300 mb-6 text-center">
-        Eczanenizi kayıt edin ve mobil uygulamadan gelen siparişleri yönetin.
-      </p>
+    <div className="min-h-screen flex items-center justify-center px-4 py-8">
+      <div className="w-full max-w-xl bg-slate-900 border border-slate-700 rounded-2xl p-5 sm:p-8 shadow-xl">
+        <h1 className="text-xl sm:text-2xl font-bold mb-2 text-center text-emerald-400">
+          Eczane Kayıt
+        </h1>
+        <p className="text-xs sm:text-sm text-slate-300 mb-6 text-center">
+          Eczanenizi kayıt edin ve mobil uygulamadan gelen siparişleri yönetin.
+        </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="md:col-span-2">
-          <label className="block text-sm mb-1 text-slate-200">
-            Eczane Adı
-          </label>
-          <input
-            className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            placeholder="Örn: Merkez Eczanesi"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="sm:col-span-2">
+            <label className="block text-sm mb-1 text-slate-200">
+              Eczane Adı
+            </label>
+            <input
+              className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              placeholder="Örn: Merkez Eczanesi"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm mb-1 text-slate-200">Email</label>
+            <input
+              type="email"
+              className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              placeholder="eczane@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm mb-1 text-slate-200">Şifre</label>
+            <input
+              type="password"
+              className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm mb-1 text-slate-200">Telefon</label>
+            <input
+              className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              placeholder="0 5XX XXX XX XX"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm mb-1 text-slate-200">Şehir</label>
+            <input
+              className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              placeholder="İstanbul"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm mb-1 text-slate-200">İlçe</label>
+            <input
+              className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              placeholder="Kadıköy"
+              value={district}
+              onChange={(e) => setDistrict(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm mb-1 text-slate-200">Mahalle</label>
+            <input
+              className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              placeholder="Caferağa"
+              value={neighborhood}
+              onChange={(e) => setNeighborhood(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm mb-1 text-slate-200">
+              Cadde / Sokak
+            </label>
+            <input
+              className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              placeholder="Moda Caddesi"
+              value={street}
+              onChange={(e) => setStreet(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm mb-1 text-slate-200">Bina No</label>
+            <input
+              className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              placeholder="42"
+              value={buildingNo}
+              onChange={(e) => setBuildingNo(e.target.value)}
+            />
+          </div>
         </div>
 
-        <div>
-          <label className="block text-sm mb-1 text-slate-200">Email</label>
-          <input
-            type="email"
-            className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            placeholder="eczane@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
+        {error && (
+          <p className="mt-4 text-sm text-red-400 bg-red-950/40 border border-red-900 rounded-lg px-3 py-2">
+            {error}
+          </p>
+        )}
 
-        <div>
-          <label className="block text-sm mb-1 text-slate-200">Şifre</label>
-          <input
-            type="password"
-            className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
+        {success && (
+          <p className="mt-4 text-sm text-emerald-300 bg-emerald-950/40 border border-emerald-800 rounded-lg px-3 py-2">
+            {success}
+          </p>
+        )}
 
-        <div>
-          <label className="block text-sm mb-1 text-slate-200">Telefon</label>
-          <input
-            className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            placeholder="0 5XX XXX XX XX"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-          />
-        </div>
+        <button
+          onClick={handleSignup}
+          disabled={loading}
+          className="mt-6 w-full rounded-lg bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-semibold py-2.5 text-sm transition-colors"
+        >
+          {loading ? "Kayıt yapılıyor..." : "Kayıt Ol"}
+        </button>
 
-        <div>
-          <label className="block text-sm mb-1 text-slate-200">Şehir</label>
-          <input
-            className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            placeholder="İstanbul"
-            value={city}
-            onChange={(e) => setCity(e.target.value)}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm mb-1 text-slate-200">İlçe</label>
-          <input
-            className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            placeholder="Kadıköy"
-            value={district}
-            onChange={(e) => setDistrict(e.target.value)}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm mb-1 text-slate-200">Mahalle</label>
-          <input
-            className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            placeholder="Caferağa"
-            value={neighborhood}
-            onChange={(e) => setNeighborhood(e.target.value)}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm mb-1 text-slate-200">
-            Cadde / Sokak
-          </label>
-          <input
-            className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            placeholder="Moda Caddesi"
-            value={street}
-            onChange={(e) => setStreet(e.target.value)}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm mb-1 text-slate-200">Bina No</label>
-          <input
-            className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            placeholder="42"
-            value={buildingNo}
-            onChange={(e) => setBuildingNo(e.target.value)}
-          />
-        </div>
+        <p className="mt-4 text-xs text-slate-400 text-center">
+          Zaten bir hesabınız varsa,{" "}
+          <a
+            href="/"
+            className="text-emerald-400 hover:text-emerald-300 font-semibold"
+          >
+            giriş ekranına dönün
+          </a>{" "}
+          ve giriş yapın.
+        </p>
       </div>
-
-      {error && (
-        <p className="mt-4 text-sm text-red-400 bg-red-950/40 border border-red-900 rounded-lg px-3 py-2">
-          {error}
-        </p>
-      )}
-
-      {success && (
-        <p className="mt-4 text-sm text-emerald-300 bg-emerald-950/40 border border-emerald-800 rounded-lg px-3 py-2">
-          {success}
-        </p>
-      )}
-
-      <button
-        onClick={handleSignup}
-        disabled={loading}
-        className="mt-6 w-full rounded-lg bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-semibold py-2 text-sm transition-colors"
-      >
-        {loading ? "Kayıt yapılıyor..." : "Kayıt Ol"}
-      </button>
-
-      <p className="mt-4 text-xs text-slate-400 text-center">
-        Zaten bir hesabınız varsa, giriş ekranına dönün ve giriş yapın.
-      </p>
     </div>
   );
 }
