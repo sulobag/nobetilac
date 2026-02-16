@@ -106,6 +106,8 @@ export interface Database {
           user_id: string;
           vehicle_type: "motorcycle" | "car" | "bicycle" | "scooter";
           is_available: boolean;
+          latitude: number | null;
+          longitude: number | null;
           created_at: string;
           updated_at: string;
         };
@@ -114,6 +116,8 @@ export interface Database {
           user_id: string;
           vehicle_type: "motorcycle" | "car" | "bicycle" | "scooter";
           is_available?: boolean;
+          latitude?: number | null;
+          longitude?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -122,8 +126,54 @@ export interface Database {
           user_id?: string;
           vehicle_type?: "motorcycle" | "car" | "bicycle" | "scooter";
           is_available?: boolean;
+          latitude?: number | null;
+          longitude?: number | null;
           created_at?: string;
           updated_at?: string;
+        };
+      };
+      orders: {
+        Row: {
+          id: string;
+          user_id: string;
+          pharmacy_id: string;
+          address_id: string;
+          courier_id: string | null;
+          prescription_no: string | null;
+          prescription_image_path: string | null;
+          status: string;
+          note: string | null;
+          rejected_courier_ids: string[];
+          delivery_code: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          pharmacy_id: string;
+          address_id: string;
+          courier_id?: string | null;
+          prescription_no?: string | null;
+          prescription_image_path?: string | null;
+          status?: string;
+          note?: string | null;
+          rejected_courier_ids?: string[];
+          delivery_code?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          pharmacy_id?: string;
+          address_id?: string;
+          courier_id?: string | null;
+          prescription_no?: string | null;
+          prescription_image_path?: string | null;
+          status?: string;
+          note?: string | null;
+          rejected_courier_ids?: string[];
+          delivery_code?: string | null;
+          created_at?: string;
         };
       };
       pharmacies: {

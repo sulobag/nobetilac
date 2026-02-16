@@ -62,6 +62,7 @@ export default function OrdersView({ onSignOut }: Props) {
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [imageLightboxUrl, setImageLightboxUrl] = useState<string | null>(null);
+  const courierRetryTimers = useRef<Map<string, { timer: ReturnType<typeof setInterval>; count: number }>>(new Map());
   const { messages: toastMessages, addToast, dismissToast } = useToast();
 
   // Ses ve bildirim altyapısı
@@ -272,6 +273,95 @@ export default function OrdersView({ onSignOut }: Props) {
     })();
   }, []);
 
+  // Kurye atama: retry mekanizması (30sn aralık, max 10 deneme = 5dk)
+  const startCourierAssignment = useCallback(
+    (orderId: string, token: string) => {
+      // Önceki retry'ı temizle
+      const existing = courierRetryTimers.current.get(orderId);
+      if (existing) clearInterval(existing.timer);
+
+      const MAX_RETRIES = 10;
+      const RETRY_INTERVAL = 30_000; // 30 saniye
+
+      const attemptAssign = async (retryCount: number) => {
+        try {
+          const isGiveUp = retryCount >= MAX_RETRIES;
+          const res = await fetch("/api/assign-courier", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              orderId,
+              token,
+              giveUp: isGiveUp,
+            }),
+          });
+          const result = await res.json();
+
+          if (result.assigned) {
+            // Kurye bulundu
+            addToast({
+              title: "Kurye Atandı",
+              body: `Sipariş için kurye bulundu (${result.distance} km).`,
+              type: "success",
+            });
+            const entry = courierRetryTimers.current.get(orderId);
+            if (entry) clearInterval(entry.timer);
+            courierRetryTimers.current.delete(orderId);
+            void queryClient.invalidateQueries({ queryKey: ["pharmacy-orders"] });
+          } else if (result.gaveUp) {
+            // Tüm denemeler tükendi
+            addToast({
+              title: "Kurye Bulunamadı",
+              body: "Tüm denemeler tükendi. Sipariş iptal edildi.",
+              type: "error",
+            });
+            const entry = courierRetryTimers.current.get(orderId);
+            if (entry) clearInterval(entry.timer);
+            courierRetryTimers.current.delete(orderId);
+            void queryClient.invalidateQueries({ queryKey: ["pharmacy-orders"] });
+          } else if (result.shouldRetry) {
+            // İlk denemede toast göster
+            if (retryCount === 0) {
+              addToast({
+                title: "Kurye Aranıyor...",
+                body: "Uygun kurye bulunamadı. 30 saniye aralıklarla tekrar denenecek.",
+                type: "info",
+              });
+            }
+          }
+        } catch {
+          // Ağ hatası - retry devam etsin
+        }
+      };
+
+      // İlk deneme hemen
+      void attemptAssign(0);
+
+      // Tekrarlayan denemeler
+      let count = 0;
+      const timer = setInterval(() => {
+        count++;
+        void attemptAssign(count);
+        // Max'a ulaşınca timer'ı durdur (attemptAssign zaten giveUp gönderecek)
+        if (count >= MAX_RETRIES) {
+          clearInterval(timer);
+          courierRetryTimers.current.delete(orderId);
+        }
+      }, RETRY_INTERVAL);
+
+      courierRetryTimers.current.set(orderId, { timer, count: 0 });
+    },
+    [accessToken, addToast, queryClient],
+  );
+
+  // Component unmount olunca tüm timer'ları temizle
+  useEffect(() => {
+    return () => {
+      courierRetryTimers.current.forEach(({ timer }) => clearInterval(timer));
+      courierRetryTimers.current.clear();
+    };
+  }, []);
+
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const { error } = await (supabase as any)
@@ -287,6 +377,7 @@ export default function OrdersView({ onSignOut }: Props) {
         try {
           const currentToken = accessToken;
           if (currentToken) {
+            // Müşteriye push bildirim gönder
             await fetch("/api/send-push", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -296,6 +387,11 @@ export default function OrdersView({ onSignOut }: Props) {
                 token: currentToken,
               }),
             });
+
+            // Onaylandıysa en yakın kuryeyi ata
+            if (status === "approved") {
+              startCourierAssignment(id, currentToken);
+            }
           }
         } catch {
           // Push gönderilemezse sessizce devam et
@@ -329,17 +425,23 @@ export default function OrdersView({ onSignOut }: Props) {
     onSignOut();
   };
 
-  const pendingOrders = orders.filter(
-    (o: OrderRow) => o.status === "pending",
+  // Aktif siparişler: teslim edilene kadar hepsi
+  const activeStatuses = ["pending", "approved", "courier_assigned", "in_transit"];
+  const activeOrders = orders.filter((o: OrderRow) =>
+    activeStatuses.includes(o.status),
   );
+  const pendingOrders = activeOrders; // Sidebar badge ve aktif görünüm için
+
   const visibleOrders =
     statusFilter === "all"
       ? orders
       : orders.filter((o) => o.status === statusFilter);
 
   const stats = {
-    pending: pendingOrders.length,
-    approved: orders.filter((o: OrderRow) => o.status === "approved").length,
+    pending: orders.filter((o: OrderRow) => o.status === "pending").length,
+    approved: orders.filter((o: OrderRow) =>
+      ["approved", "courier_assigned", "in_transit"].includes(o.status),
+    ).length,
     rejected: orders.filter((o: OrderRow) => o.status === "rejected").length,
   };
 
@@ -367,18 +469,15 @@ export default function OrdersView({ onSignOut }: Props) {
   };
 
   const statusBadge = (status: string) => {
-    const cls =
-      status === "approved"
-        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-        : status === "rejected"
-          ? "bg-rose-50 text-rose-700 border-rose-200"
-          : "bg-amber-50 text-amber-700 border-amber-200";
-    const label =
-      status === "approved"
-        ? "Onaylandı"
-        : status === "rejected"
-          ? "Reddedildi"
-          : "Bekliyor";
+    const statusMap: Record<string, { cls: string; label: string }> = {
+      pending: { cls: "bg-amber-50 text-amber-700 border-amber-200", label: "Bekliyor" },
+      approved: { cls: "bg-emerald-50 text-emerald-700 border-emerald-200", label: "Onaylandı" },
+      courier_assigned: { cls: "bg-sky-50 text-sky-700 border-sky-200", label: "Kuryeye Atandı" },
+      in_transit: { cls: "bg-indigo-50 text-indigo-700 border-indigo-200", label: "Yolda" },
+      delivered: { cls: "bg-teal-50 text-teal-700 border-teal-200", label: "Teslim Edildi" },
+      rejected: { cls: "bg-rose-50 text-rose-700 border-rose-200", label: "Reddedildi" },
+    };
+    const { cls, label } = statusMap[status] || statusMap.pending;
     return (
       <span
         className={`inline-flex px-2 py-1 rounded-full text-[11px] font-medium border ${cls}`}
@@ -386,6 +485,21 @@ export default function OrdersView({ onSignOut }: Props) {
         {label}
       </span>
     );
+  };
+
+  const inlineStatus = (status: string) => {
+    const map: Record<
+      string,
+      { dot: string; label: string }
+    > = {
+      pending: { dot: "bg-amber-500", label: "Onay Bekliyor" },
+      approved: { dot: "bg-emerald-500", label: "Onaylandı" },
+      courier_assigned: { dot: "bg-sky-500", label: "Kurye Atandı" },
+      in_transit: { dot: "bg-indigo-500", label: "Kurye Yolda" },
+      delivered: { dot: "bg-teal-500", label: "Teslim Edildi" },
+      rejected: { dot: "bg-rose-500", label: "Reddedildi" },
+    };
+    return map[status] || map.pending;
   };
 
   return (
@@ -471,13 +585,22 @@ export default function OrdersView({ onSignOut }: Props) {
                     {/* Üst kısım */}
                     <div className="px-3.5 sm:px-4 pt-3.5 sm:pt-4 pb-2 flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="relative flex h-2.5 w-2.5">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500" />
-                        </span>
-                        <span className="text-[11px] font-medium text-amber-600">
-                          Onay Bekliyor
-                        </span>
+                        {(() => {
+                          const s = inlineStatus(order.status);
+                          return (
+                            <>
+                              <span className="relative flex h-2.5 w-2.5">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-40" />
+                                <span
+                                  className={`relative inline-flex rounded-full h-2.5 w-2.5 ${s.dot}`}
+                                />
+                              </span>
+                              <span className="text-[11px] font-medium text-slate-700">
+                                {s.label}
+                              </span>
+                            </>
+                          );
+                        })()}
                       </div>
                       <span className="text-[11px] text-slate-400">
                         {timeSince(order.created_at)}
@@ -543,7 +666,7 @@ export default function OrdersView({ onSignOut }: Props) {
                       <button
                         type="button"
                         onClick={() => updateStatus(order.id, "rejected")}
-                        disabled={updatingId === order.id}
+                        disabled={updatingId === order.id || order.status !== "pending"}
                         className="flex-1 py-2.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors border-r border-slate-100 disabled:opacity-50"
                       >
                         Reddet
@@ -551,7 +674,7 @@ export default function OrdersView({ onSignOut }: Props) {
                       <button
                         type="button"
                         onClick={() => updateStatus(order.id, "approved")}
-                        disabled={updatingId === order.id}
+                        disabled={updatingId === order.id || order.status !== "pending"}
                         className="flex-1 py-2.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 transition-colors disabled:opacity-50"
                       >
                         Onayla
@@ -857,21 +980,27 @@ export default function OrdersView({ onSignOut }: Props) {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <p className="text-xs text-slate-500">
                 Bu ekrandan siparişi onaylayabilir veya reddedebilirsiniz.
               </p>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => updateStatus(selectedOrder.id, "rejected")}
-                  disabled={updatingId === selectedOrder.id}
+                    disabled={
+                      updatingId === selectedOrder.id ||
+                      selectedOrder.status !== "pending"
+                    }
                   className="flex-1 sm:flex-initial px-4 py-2 text-xs rounded-lg bg-rose-500 hover:bg-rose-400 text-white font-semibold disabled:opacity-50"
                 >
                   Reddet
                 </button>
                 <button
                   onClick={() => updateStatus(selectedOrder.id, "approved")}
-                  disabled={updatingId === selectedOrder.id}
+                    disabled={
+                      updatingId === selectedOrder.id ||
+                      selectedOrder.status !== "pending"
+                    }
                   className="flex-1 sm:flex-initial px-4 py-2 text-xs rounded-lg bg-emerald-500 hover:bg-emerald-400 text-white font-semibold disabled:opacity-50"
                 >
                   Onayla

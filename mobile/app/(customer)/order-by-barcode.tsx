@@ -246,6 +246,7 @@ export default function OrderByBarcode() {
     return `${km.toFixed(1)} km`;
   };
 
+  // Galeriden fotoğraf seç
   const handlePickImage = async () => {
     try {
       setPickingImage(true);
@@ -272,6 +273,45 @@ export default function OrderByBarcode() {
       const asset = result.assets[0];
       if (!asset.uri) {
         Alert.alert("Hata", "Seçilen görüntü işlenemedi.");
+        return;
+      }
+
+      setPrescriptionImageUri(asset.uri);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Bir hata oluştu.";
+      Alert.alert("Hata", msg);
+    } finally {
+      setPickingImage(false);
+    }
+  };
+
+  // Kamerayla fotoğraf çek
+  const handleTakePhoto = async () => {
+    try {
+      setPickingImage(true);
+
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "İzin gerekli",
+          "Reçete fotoğrafı çekmek için kamera erişim izni vermelisiniz.",
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.8,
+      });
+
+      if (result.canceled || !result.assets || result.assets.length === 0) {
+        return;
+      }
+
+      const asset = result.assets[0];
+      if (!asset.uri) {
+        Alert.alert("Hata", "Çekilen görüntü işlenemedi.");
         return;
       }
 
@@ -604,28 +644,50 @@ export default function OrderByBarcode() {
                     style={{ width: 72, height: 72, borderRadius: 12 }}
                     contentFit="cover"
                   />
+                  <View className="flex-1 ml-4 flex-row gap-2">
+                    <TouchableOpacity
+                      onPress={handlePickImage}
+                      disabled={pickingImage || submitting}
+                      className="flex-1 px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 items-center justify-center"
+                    >
+                      <Text className="text-xs font-semibold text-gray-800">
+                        Galeriden Seç
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={handleTakePhoto}
+                      disabled={pickingImage || submitting}
+                      className="flex-1 px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 items-center justify-center"
+                    >
+                      <Text className="text-xs font-semibold text-gray-800">
+                        Kamerayla Çek
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : (
+                <View className="flex-row gap-3">
                   <TouchableOpacity
                     onPress={handlePickImage}
                     disabled={pickingImage || submitting}
-                    className="ml-4 px-4 py-2 rounded-xl border border-gray-200 bg-gray-50"
+                    className="flex-1 border border-dashed border-emerald-300 rounded-xl py-3 px-4 items-center justify-center bg-emerald-50/40"
                   >
-                    <Text className="text-xs font-semibold text-gray-800">
-                      Değiştir
+                    <Text className="text-sm text-emerald-700 font-medium">
+                      {pickingImage
+                        ? "Görsel açılıyor..."
+                        : "Galeriden fotoğraf seç"}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={handleTakePhoto}
+                    disabled={pickingImage || submitting}
+                    className="flex-1 border border-dashed border-emerald-300 rounded-xl py-3 px-4 items-center justify-center bg-emerald-50/70"
+                  >
+                    <Text className="text-sm text-emerald-700 font-medium">
+                      Kamerayla çek
                     </Text>
                   </TouchableOpacity>
                 </View>
-              ) : (
-                <TouchableOpacity
-                  onPress={handlePickImage}
-                  disabled={pickingImage || submitting}
-                  className="border border-dashed border-emerald-300 rounded-xl py-3 px-4 flex-row items-center justify-center bg-emerald-50/40"
-                >
-                  <Text className="text-sm text-emerald-700 font-medium">
-                    {pickingImage
-                      ? "Galeri açılıyor..."
-                      : "Reçete fotoğrafı ekle"}
-                  </Text>
-                </TouchableOpacity>
               )}
               <Text className="text-[11px] text-gray-500 mt-2">
                 Fotoğraf eklemek zorunlu değildir, fakat eczanenin reçetenizi

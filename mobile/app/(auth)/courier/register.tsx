@@ -81,7 +81,7 @@ export default function CourierRegister() {
           text: "Tamam",
           onPress: () => router.push("/(auth)/courier/login"),
         },
-      ]
+      ],
     );
   };
 
@@ -105,7 +105,7 @@ export default function CourierRegister() {
     if (!validatePhone(phone)) {
       Alert.alert(
         "Hata",
-        "Telefon numarası 05XX XXX XX XX formatında olmalıdır"
+        "Telefon numarası 05XX XXX XX XX formatında olmalıdır",
       );
       return;
     }
@@ -127,7 +127,7 @@ export default function CourierRegister() {
       phone,
       fullName,
       "courier",
-      vehicleType
+      vehicleType,
     );
 
     if (error) {
@@ -136,7 +136,7 @@ export default function CourierRegister() {
       if (error.message.includes("rate limit")) {
         Alert.alert(
           "Çok Fazla Deneme",
-          "Çok fazla kayıt denemesi yaptınız. Lütfen 5-10 dakika bekleyip tekrar deneyin."
+          "Çok fazla kayıt denemesi yaptınız. Lütfen 5-10 dakika bekleyip tekrar deneyin.",
         );
         return;
       }
@@ -168,7 +168,7 @@ export default function CourierRegister() {
                 text: "Giriş Yap",
                 onPress: () => router.replace("/(auth)/courier/login"),
               },
-            ]
+            ],
           );
           return;
         }
@@ -186,7 +186,7 @@ export default function CourierRegister() {
               text: "Evet, Kurye Ol",
               onPress: handleBecomeCourier,
             },
-          ]
+          ],
         );
         return;
       }
@@ -210,7 +210,7 @@ export default function CourierRegister() {
                 params: { email, userType: "courier" },
               }),
           },
-        ]
+        ],
       );
     } else {
       // Email verification yok, direkt session oluştu
@@ -254,7 +254,7 @@ export default function CourierRegister() {
             </Text>
             <TextInput
               className="border border-gray-300 rounded-xl px-4 py-3 text-base bg-gray-50"
-              placeholder="Ahmet Kurye"
+              placeholder="Enes SARIHAN"
               value={fullName}
               onChangeText={setFullName}
               autoCapitalize="words"

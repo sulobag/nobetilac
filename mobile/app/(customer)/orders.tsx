@@ -22,7 +22,8 @@ type OrderRow = {
   prescription_no: string;
   created_at: string;
   note?: string | null;
-   prescription_image_path?: string | null;
+  prescription_image_path?: string | null;
+  delivery_code?: string | null;
   pharmacies?: {
     name: string | null;
     city: string | null;
@@ -68,6 +69,7 @@ export default function Orders() {
             created_at,
             note,
             prescription_image_path,
+            delivery_code,
             pharmacies:pharmacy_id (
               name,
               city,
@@ -120,19 +122,27 @@ export default function Orders() {
   }, [user, refetch]);
 
   const getStatusLabel = (status: string) => {
-    if (status === "approved") return "Onaylandı";
-    if (status === "rejected") return "Reddedildi";
-    return "Bekliyor";
+    const labels: Record<string, string> = {
+      pending: "Bekliyor",
+      approved: "Onaylandı",
+      courier_assigned: "Kuryeye Atandı",
+      in_transit: "Yolda",
+      delivered: "Teslim Edildi",
+      rejected: "Reddedildi",
+    };
+    return labels[status] || "Bekliyor";
   };
 
   const getStatusColors = (status: string) => {
-    if (status === "approved") {
-      return "bg-emerald-50 border-emerald-200 text-emerald-700";
-    }
-    if (status === "rejected") {
-      return "bg-rose-50 border-rose-200 text-rose-700";
-    }
-    return "bg-amber-50 border-amber-200 text-amber-700";
+    const colors: Record<string, string> = {
+      pending: "bg-amber-50 border-amber-200 text-amber-700",
+      approved: "bg-emerald-50 border-emerald-200 text-emerald-700",
+      courier_assigned: "bg-sky-50 border-sky-200 text-sky-700",
+      in_transit: "bg-indigo-50 border-indigo-200 text-indigo-700",
+      delivered: "bg-teal-50 border-teal-200 text-teal-700",
+      rejected: "bg-rose-50 border-rose-200 text-rose-700",
+    };
+    return colors[status] || colors.pending;
   };
 
   const renderItem = ({ item }: { item: OrderRow }) => (
@@ -282,7 +292,26 @@ export default function Orders() {
                   </View>
                 </View>
 
-                <View className="border-t border-gray-200 pt-3 mt-1">
+                {/* Teslimat kodu */}
+                {selectedOrder.status === "in_transit" &&
+                  selectedOrder.delivery_code && (
+                    <View className="bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-3 mt-3">
+                      <View className="flex-row items-center gap-2 mb-1">
+                        <Ionicons name="key-outline" size={14} color="#4338CA" />
+                        <Text className="text-[11px] font-semibold text-indigo-700 uppercase">
+                          Teslimat Doğrulama Kodu
+                        </Text>
+                      </View>
+                      <Text className="text-2xl font-bold text-indigo-900 tracking-[8px] text-center mt-1">
+                        {selectedOrder.delivery_code}
+                      </Text>
+                      <Text className="text-[10px] text-indigo-500 text-center mt-1">
+                        Bu kodu kuryeye söyleyin
+                      </Text>
+                    </View>
+                  )}
+
+                <View className="border-t border-gray-200 pt-3 mt-3">
                   <Text className="text-xs font-semibold text-gray-500 uppercase mb-1">
                     Eczane
                   </Text>

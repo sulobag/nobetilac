@@ -36,7 +36,7 @@ export default function CustomerRegister() {
     if (!validatePhone(phone)) {
       Alert.alert(
         "Hata",
-        "Telefon numarası 05XX XXX XX XX formatında olmalıdır"
+        "Telefon numarası 05XX XXX XX XX formatında olmalıdır",
       );
       return;
     }
@@ -57,7 +57,7 @@ export default function CustomerRegister() {
       password,
       phone,
       fullName,
-      "customer"
+      "customer",
     );
 
     if (error) {
@@ -66,7 +66,7 @@ export default function CustomerRegister() {
       if (error.message.includes("rate limit")) {
         Alert.alert(
           "Çok Fazla Deneme",
-          "Çok fazla kayıt denemesi yaptınız. Lütfen 5-10 dakika bekleyip tekrar deneyin."
+          "Çok fazla kayıt denemesi yaptınız. Lütfen 5-10 dakika bekleyip tekrar deneyin.",
         );
       } else {
         Alert.alert("Kayıt Hatası", error.message);
@@ -88,7 +88,7 @@ export default function CustomerRegister() {
                 params: { email, userType: "customer" },
               }),
           },
-        ]
+        ],
       );
     } else {
       // Email verification yok, direkt session oluştu
@@ -129,7 +129,7 @@ export default function CustomerRegister() {
             </Text>
             <TextInput
               className="border border-gray-300 rounded-xl px-4 py-3 text-base bg-gray-50"
-              placeholder="Ali Yılmaz"
+              placeholder="Enes SARIHAN"
               value={fullName}
               onChangeText={setFullName}
               autoCapitalize="words"
