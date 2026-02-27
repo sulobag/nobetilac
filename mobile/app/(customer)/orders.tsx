@@ -18,12 +18,30 @@ import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 
 type OrderRow = {
   id: string;
+  order_no?: string | null;
   status: string;
   prescription_no: string;
   created_at: string;
   note?: string | null;
   prescription_image_path?: string | null;
   delivery_code?: string | null;
+  payments?:
+    | {
+        id: string;
+        status:
+          | "draft"
+          | "awaiting_payment"
+          | "paid"
+          | "failed"
+          | "cancelled"
+          | "refunded";
+        total_price: number;
+        medicine_price: number;
+        delivery_fee: number;
+        platform_commission_amount: number;
+        currency: string;
+      }[]
+    | null;
   pharmacies?: {
     name: string | null;
     city: string | null;
@@ -64,12 +82,22 @@ export default function Orders() {
         .select(
           `
             id,
+            order_no,
             status,
             prescription_no,
             created_at,
             note,
             prescription_image_path,
             delivery_code,
+            payments:payments!payments_order_id_fkey (
+              id,
+              status,
+              total_price,
+              medicine_price,
+              delivery_fee,
+              platform_commission_amount,
+              currency
+            ),
             pharmacies:pharmacy_id (
               name,
               city,
@@ -129,6 +157,7 @@ export default function Orders() {
       in_transit: "Yolda",
       delivered: "Teslim Edildi",
       rejected: "Reddedildi",
+      cancelled: "İptal Edildi",
     };
     return labels[status] || "Bekliyor";
   };
@@ -141,11 +170,31 @@ export default function Orders() {
       in_transit: "bg-indigo-50 border-indigo-200 text-indigo-700",
       delivered: "bg-teal-50 border-teal-200 text-teal-700",
       rejected: "bg-rose-50 border-rose-200 text-rose-700",
+      cancelled: "bg-slate-50 border-slate-200 text-slate-700",
     };
     return colors[status] || colors.pending;
   };
 
-  const renderItem = ({ item }: { item: OrderRow }) => (
+  const renderItem = ({ item }: { item: OrderRow }) => {
+    const payment = Array.isArray(item.payments) ? item.payments[0] : null;
+    const isPaymentAwaiting = payment?.status === "awaiting_payment";
+    const paymentStatusLabel = payment
+      ? ({
+          awaiting_payment: "Ödeme Bekleniyor",
+          paid: "Ödendi",
+          failed: "Ödeme Başarısız",
+          cancelled: "Ödeme İptal Edildi",
+          refunded: "İade Edildi",
+          draft: "Ödeme Oluşturulmadı",
+        } as const)[payment.status]
+      : "Ödeme Oluşturulmadı";
+
+    const badgeLabel =
+      item.status === "courier_assigned" && isPaymentAwaiting
+        ? "Ödeme Bekleniyor"
+        : getStatusLabel(item.status);
+
+    return (
     <TouchableOpacity
       onPress={() => setSelectedOrder(item)}
       activeOpacity={0.85}
@@ -154,10 +203,19 @@ export default function Orders() {
       <View className="flex-row justify-between items-center">
         <View className="flex-1 mr-3">
           <Text className="text-xs font-semibold text-gray-500 uppercase">
-            Reçete No
+            Sipariş / Reçete
           </Text>
-          <Text className="mt-1 text-base font-semibold text-gray-900 font-mono">
-            {item.prescription_no}
+          <Text className="mt-1 text-[11px] text-gray-500">
+            Sipariş No:{" "}
+            <Text className="font-mono text-gray-900 text-sm">
+              {item.order_no || item.id.slice(0, 8)}
+            </Text>
+          </Text>
+          <Text className="mt-0.5 text-[11px] text-gray-500">
+            Reçete No:{" "}
+            <Text className="font-mono text-gray-900 text-sm">
+              {item.prescription_no}
+            </Text>
           </Text>
           <Text className="text-gray-500 text-[11px] mt-1">
             {new Date(item.created_at).toLocaleString("tr-TR")}
@@ -169,10 +227,61 @@ export default function Orders() {
           )}`}
         >
           <Text className="text-xs font-semibold">
-            {getStatusLabel(item.status)}
+            {badgeLabel}
           </Text>
         </View>
       </View>
+
+      {isPaymentAwaiting && (
+        <View className="mt-3 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2">
+          <Text className="text-[11px] font-semibold text-emerald-700">
+            Ödemeniz hazır
+          </Text>
+          <Text className="text-[11px] text-emerald-700/80 mt-0.5">
+            Toplam: {payment?.total_price?.toFixed(2)} {payment?.currency || "TRY"}
+          </Text>
+          {!!payment?.id && (
+            <TouchableOpacity
+              onPress={() => {
+                setSelectedOrder(null);
+                setPrescriptionImageUrl(null);
+                setLoadingPrescriptionImage(false);
+                router.push({
+                  pathname: "/(customer)/payment/[paymentId]",
+                  params: { paymentId: payment.id },
+                });
+              }}
+              className="mt-2 self-start bg-emerald-600 rounded-lg px-3 py-2"
+            >
+              <Text className="text-white text-xs font-semibold">Öde</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
+      {payment && (
+        <View className="mt-2 flex-row items-center justify-between">
+          <Text className="text-[11px] text-gray-500">
+            Ödeme Durumu:{" "}
+            <Text
+              className={
+                payment.status === "paid"
+                  ? "text-emerald-700 font-semibold"
+                  : payment.status === "awaiting_payment"
+                    ? "text-amber-700 font-semibold"
+                    : payment.status === "failed"
+                      ? "text-rose-700 font-semibold"
+                      : "text-gray-700 font-semibold"
+              }
+            >
+              {paymentStatusLabel}
+            </Text>
+          </Text>
+          <Text className="text-[11px] font-mono text-gray-800">
+            {payment.total_price.toFixed(2)} {payment.currency || "TRY"}
+          </Text>
+        </View>
+      )}
 
       {item.note && (
         <Text className="mt-2 text-xs text-gray-600 italic" numberOfLines={2}>
@@ -185,7 +294,8 @@ export default function Orders() {
         </Text>
       )}
     </TouchableOpacity>
-  );
+    );
+  };
 
   if (isLoading) {
     return (
@@ -269,16 +379,20 @@ export default function Orders() {
                     <Text className="text-xs font-semibold text-gray-500 uppercase">
                       Sipariş Detayı
                     </Text>
-                    <Text className="mt-1 text-lg font-semibold text-gray-900">
+                    <Text className="mt-1 text-[12px] text-gray-500">
+                      Sipariş No:{" "}
+                      <Text className="font-mono text-gray-900 text-sm">
+                        {selectedOrder.order_no || selectedOrder.id.slice(0, 8)}
+                      </Text>
+                    </Text>
+                    <Text className="mt-0.5 text-[12px] text-gray-500">
                       Reçete No:{" "}
-                      <Text className="font-mono">
+                      <Text className="font-mono text-gray-900 text-sm">
                         {selectedOrder.prescription_no}
                       </Text>
                     </Text>
-                    <Text className="mt-1 text-xs text-gray-500">
-                      {new Date(
-                        selectedOrder.created_at,
-                      ).toLocaleString("tr-TR")}
+                    <Text className="mt-1 text-xs text-gray-400">
+                      {new Date(selectedOrder.created_at).toLocaleString("tr-TR")}
                     </Text>
                   </View>
                   <View
@@ -350,6 +464,78 @@ export default function Orders() {
                   ) : (
                     <Text className="text-sm text-gray-500">
                       Adres bilgisi bulunamadı.
+                    </Text>
+                  )}
+                </View>
+
+                <View className="border-t border-gray-200 pt-3 mt-3">
+                  <Text className="text-xs font-semibold text-gray-500 uppercase mb-1">
+                    Ödeme Özeti
+                  </Text>
+                  {Array.isArray(selectedOrder.payments) &&
+                  selectedOrder.payments[0] ? (
+                    <View>
+                      <Text className="text-xs text-gray-700">
+                        Durum:{" "}
+                        <Text
+                          className={
+                            selectedOrder.payments[0].status === "paid"
+                              ? "text-emerald-700 font-semibold"
+                              : selectedOrder.payments[0].status ===
+                                  "awaiting_payment"
+                                ? "text-amber-700 font-semibold"
+                                : selectedOrder.payments[0].status === "failed"
+                                  ? "text-rose-700 font-semibold"
+                                  : "text-gray-700 font-semibold"
+                          }
+                        >
+                          {(() => {
+                            const p = selectedOrder.payments?.[0];
+                            if (!p) return "Ödeme Oluşturulmadı";
+                            const map: Record<string, string> = {
+                              awaiting_payment: "Ödeme Bekleniyor",
+                              paid: "Ödendi",
+                              failed: "Ödeme Başarısız",
+                              cancelled: "Ödeme İptal Edildi",
+                              refunded: "İade Edildi",
+                              draft: "Ödeme Oluşturulmadı",
+                            };
+                            return map[p.status] || "Ödeme Oluşturulmadı";
+                          })()}
+                        </Text>
+                      </Text>
+                      <Text className="text-xs text-gray-700 mt-1">
+                        İlaç:{" "}
+                        <Text className="font-mono">
+                          {selectedOrder.payments[0].medicine_price.toFixed(2)} TL
+                        </Text>
+                      </Text>
+                      <Text className="text-xs text-gray-700 mt-0.5">
+                        Teslimat:{" "}
+                        <Text className="font-mono">
+                          {selectedOrder.payments[0].delivery_fee.toFixed(2)} TL
+                        </Text>
+                      </Text>
+                      <Text className="text-xs text-gray-700 mt-0.5">
+                        Platform Komisyonu:{" "}
+                        <Text className="font-mono">
+                          {selectedOrder.payments[0].platform_commission_amount.toFixed(
+                            2,
+                          )}{" "}
+                          TL
+                        </Text>
+                      </Text>
+                      <Text className="text-xs text-gray-900 mt-1">
+                        Toplam:{" "}
+                        <Text className="font-mono font-semibold">
+                          {selectedOrder.payments[0].total_price.toFixed(2)}{" "}
+                          {selectedOrder.payments[0].currency || "TRY"}
+                        </Text>
+                      </Text>
+                    </View>
+                  ) : (
+                    <Text className="text-sm text-gray-500">
+                      Bu sipariş için henüz ödeme kaydı oluşturulmamış.
                     </Text>
                   )}
                 </View>

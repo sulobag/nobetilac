@@ -388,11 +388,20 @@ export default function OrderByBarcode() {
         prescriptionImagePath = filePath;
       }
 
+      // Sipariş numarası üret (kısa ve okunabilir)
+      const now = new Date();
+      const yyyy = now.getFullYear().toString().slice(-2);
+      const mm = String(now.getMonth() + 1).padStart(2, "0");
+      const dd = String(now.getDate()).padStart(2, "0");
+      const rand = Math.floor(Math.random() * 9000) + 1000; // 4 haneli
+      const orderNo = `NB${yyyy}${mm}${dd}-${rand}`;
+
       const { error: orderError } = (await (supabase as any)
         .from("orders")
         .insert({
           user_id: user.id,
           address_id: selectedAddressId,
+          order_no: orderNo,
           prescription_no: pn || null,
           status: "pending",
           note: note.trim() || null,
@@ -415,6 +424,9 @@ export default function OrderByBarcode() {
       setNote("");
       setPrescriptionImageUri(null);
       void queryClient.invalidateQueries({ queryKey: ["customer-orders"] });
+      void queryClient.invalidateQueries({
+        queryKey: ["customer-active-orders", user?.id],
+      });
 
       Alert.alert("Başarılı", "Siparişiniz alındı!", [
         {

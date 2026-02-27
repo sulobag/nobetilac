@@ -135,6 +135,7 @@ export interface Database {
       orders: {
         Row: {
           id: string;
+          order_no: string | null;
           user_id: string;
           pharmacy_id: string;
           address_id: string;
@@ -149,6 +150,7 @@ export interface Database {
         };
         Insert: {
           id?: string;
+          order_no?: string | null;
           user_id: string;
           pharmacy_id: string;
           address_id: string;
@@ -163,6 +165,7 @@ export interface Database {
         };
         Update: {
           id?: string;
+          order_no?: string | null;
           user_id?: string;
           pharmacy_id?: string;
           address_id?: string;
@@ -176,6 +179,92 @@ export interface Database {
           created_at?: string;
         };
       };
+      payments: {
+        Row: {
+          id: string;
+          order_id: string;
+          user_id: string;
+          pharmacy_id: string | null;
+          courier_id: string | null;
+          currency: string;
+          medicine_price: number;
+          delivery_fee: number;
+          platform_commission_rate: number;
+          platform_commission_amount: number;
+          total_price: number;
+          status:
+            | "draft"
+            | "awaiting_payment"
+            | "paid"
+            | "failed"
+            | "cancelled"
+            | "refunded";
+          iyzico_conversation_id: string | null;
+          iyzico_basket_id: string | null;
+          iyzico_checkout_token: string | null;
+          iyzico_payment_id: string | null;
+          iyzico_payment_transaction_id: string | null;
+          iyzico_raw: Json | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          order_id: string;
+          user_id: string;
+          pharmacy_id?: string | null;
+          courier_id?: string | null;
+          currency?: string;
+          medicine_price: number;
+          delivery_fee?: number;
+          platform_commission_rate?: number;
+          platform_commission_amount: number;
+          total_price: number;
+          status?:
+            | "draft"
+            | "awaiting_payment"
+            | "paid"
+            | "failed"
+            | "cancelled"
+            | "refunded";
+          iyzico_conversation_id?: string | null;
+          iyzico_basket_id?: string | null;
+          iyzico_checkout_token?: string | null;
+          iyzico_payment_id?: string | null;
+          iyzico_payment_transaction_id?: string | null;
+          iyzico_raw?: Json | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          order_id?: string;
+          user_id?: string;
+          pharmacy_id?: string | null;
+          courier_id?: string | null;
+          currency?: string;
+          medicine_price?: number;
+          delivery_fee?: number;
+          platform_commission_rate?: number;
+          platform_commission_amount?: number;
+          total_price?: number;
+          status?:
+            | "draft"
+            | "awaiting_payment"
+            | "paid"
+            | "failed"
+            | "cancelled"
+            | "refunded";
+          iyzico_conversation_id?: string | null;
+          iyzico_basket_id?: string | null;
+          iyzico_checkout_token?: string | null;
+          iyzico_payment_id?: string | null;
+          iyzico_payment_transaction_id?: string | null;
+          iyzico_raw?: Json | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
       pharmacies: {
         Row: {
           id: string;
@@ -187,6 +276,7 @@ export interface Database {
           neighborhood: string | null;
           street: string | null;
           building_no: string | null;
+          submerchant_key: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -200,6 +290,7 @@ export interface Database {
           neighborhood?: string | null;
           street?: string | null;
           building_no?: string | null;
+          submerchant_key?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -213,6 +304,7 @@ export interface Database {
           neighborhood?: string | null;
           street?: string | null;
           building_no?: string | null;
+          submerchant_key?: string | null;
           created_at?: string;
           updated_at?: string;
         };

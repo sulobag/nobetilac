@@ -33,6 +33,7 @@ type CourierOrder = {
   prescription_no: string | null;
   note: string | null;
   created_at: string;
+  payment_status?: "draft" | "awaiting_payment" | "paid" | "failed" | "cancelled" | "refunded" | null;
   pharmacies?: {
     name: string | null;
     city: string | null;
@@ -121,6 +122,10 @@ export default function CourierHome() {
 
   const courier = apiData?.courier ?? null;
   const activeOrder = apiData?.activeOrder ?? null;
+  const canStartDelivery =
+    !!activeOrder &&
+    activeOrder.status === "courier_assigned" &&
+    activeOrder.payment_status === "paid";
   const todayDelivered = apiData?.todayDelivered ?? 0;
 
   /* ---- Realtime: Postgres Changes (tüm orders) ---- */
@@ -457,7 +462,9 @@ export default function CourierHome() {
                       <View className="w-2 h-2 rounded-full bg-sky-500" />
                     </View>
                     <Text className="text-xs font-semibold text-sky-700">
-                      Onayınız Bekleniyor
+                      {activeOrder.payment_status === "paid"
+                        ? "Teslimata Hazır"
+                        : "Ödeme Bekleniyor"}
                     </Text>
                   </>
                 ) : (
@@ -577,8 +584,10 @@ export default function CourierHome() {
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => handleOrderAction("accept")}
-                    disabled={actionLoading}
-                    className="flex-[2] bg-emerald-600 rounded-xl py-3 items-center"
+                    disabled={actionLoading || !canStartDelivery}
+                    className={`flex-[2] rounded-xl py-3 items-center ${
+                      canStartDelivery ? "bg-emerald-600" : "bg-gray-200"
+                    }`}
                     activeOpacity={0.8}
                   >
                     {actionLoading ? (
@@ -588,10 +597,16 @@ export default function CourierHome() {
                         <Ionicons
                           name="checkmark-circle"
                           size={16}
-                          color="#ECFDF5"
+                          color={canStartDelivery ? "#ECFDF5" : "#6B7280"}
                         />
-                        <Text className="text-xs font-semibold text-emerald-50">
-                          Kabul Et
+                        <Text
+                          className={`text-xs font-semibold ${
+                            canStartDelivery
+                              ? "text-emerald-50"
+                              : "text-gray-600"
+                          }`}
+                        >
+                          {canStartDelivery ? "Kabul Et" : "Ödeme Bekleniyor"}
                         </Text>
                       </View>
                     )}

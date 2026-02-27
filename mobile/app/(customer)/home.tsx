@@ -19,11 +19,29 @@ import React, { useEffect, useState } from "react";
 
 type OrderRow = {
   id: string;
+  order_no?: string | null;
   status: string;
   prescription_no: string;
   created_at: string;
   note?: string | null;
   delivery_code?: string | null;
+  payments?:
+    | {
+        id: string;
+        status:
+          | "draft"
+          | "awaiting_payment"
+          | "paid"
+          | "failed"
+          | "cancelled"
+          | "refunded";
+        total_price: number;
+        medicine_price: number;
+        delivery_fee: number;
+        platform_commission_amount: number;
+        currency: string;
+      }[]
+    | null;
   pharmacies?: {
     name: string | null;
     city: string | null;
@@ -43,12 +61,13 @@ type OrderRow = {
 /* ---- Durum yardımcıları ---- */
 
 const STATUS_LABELS: Record<string, string> = {
-  pending: "Eczane Onayı Bekleniyor",
+  pending: "Eczane Tarafından Analiz Ediliyor",
   approved: "Kurye Aranıyor",
   courier_assigned: "Kuryeye Atandı",
   in_transit: "Kurye Yolda",
   delivered: "Teslim Edildi",
   rejected: "Reddedildi",
+  cancelled: "İptal Edildi",
 };
 
 const STATUS_COLORS: Record<
@@ -97,6 +116,13 @@ const STATUS_COLORS: Record<
     icon: "close-circle-outline",
     iconColor: "#E11D48",
   },
+  cancelled: {
+    bg: "bg-slate-50",
+    border: "border-slate-200",
+    text: "text-slate-700",
+    icon: "close-outline",
+    iconColor: "#334155",
+  },
 };
 
 function getStatusInfo(status: string) {
@@ -129,8 +155,12 @@ export default function CustomerHome() {
         .from("orders")
         .select(
           `
-            id, status, prescription_no, created_at, note,
+            id, order_no, status, prescription_no, created_at, note,
             prescription_image_path, delivery_code,
+            payments:payments!payments_order_id_fkey (
+              id, status, total_price, medicine_price, delivery_fee,
+              platform_commission_amount, currency
+            ),
             pharmacies:pharmacy_id ( name, city, district ),
             addresses:address_id (
               formatted_address, city, district,
@@ -139,12 +169,7 @@ export default function CustomerHome() {
           `,
         )
         .eq("user_id", user.id)
-        .in("status", [
-          "pending",
-          "approved",
-          "courier_assigned",
-          "in_transit",
-        ])
+        .in("status", ["pending", "approved", "courier_assigned", "in_transit"])
         .order("created_at", { ascending: false });
 
       if (error) throw new Error(error.message || "Siparişler yüklenemedi.");
@@ -197,6 +222,12 @@ export default function CustomerHome() {
   const renderOrderCard = ({ item }: { item: OrderRow }) => {
     const si = getStatusInfo(item.status);
     const isInTransit = item.status === "in_transit";
+    const payment = Array.isArray(item.payments) ? item.payments[0] : null;
+    const isPaymentAwaiting = payment?.status === "awaiting_payment";
+    const statusText =
+      item.status === "courier_assigned" && isPaymentAwaiting
+        ? "Ödeme Bekleniyor"
+        : STATUS_LABELS[item.status] || "Bekliyor";
 
     return (
       <TouchableOpacity
@@ -211,12 +242,22 @@ export default function CustomerHome() {
             size={14}
             color={si.iconColor}
           />
-          <Text className={`text-xs font-semibold ${si.text}`}>
-            {STATUS_LABELS[item.status] || "Bekliyor"}
-          </Text>
+          <Text className={`text-xs font-semibold ${si.text}`}>{statusText}</Text>
         </View>
 
         <View className="px-4 py-3">
+          {isPaymentAwaiting && (
+            <View className="mb-2 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2">
+              <Text className="text-[11px] font-semibold text-emerald-700">
+                Ödemeniz hazır
+              </Text>
+              <Text className="text-[11px] text-emerald-700/80 mt-0.5">
+                Toplam: {payment?.total_price?.toFixed(2)}{" "}
+                {payment?.currency || "TRY"}
+              </Text>
+            </View>
+          )}
+
           {/* Eczane */}
           <View className="flex-row items-center gap-2 mb-2">
             <View className="w-8 h-8 rounded-full bg-emerald-50 items-center justify-center">
@@ -589,6 +630,143 @@ export default function CustomerHome() {
                 </View>
 
                 <ScrollView className="px-5 py-4">
+                  <View className="mb-3">
+                    <Text className="text-[11px] text-gray-500">
+                      Sipariş No:{" "}
+                      <Text className="font-mono text-gray-900">
+                        {selectedOrder.order_no || selectedOrder.id.slice(0, 8)}
+                      </Text>
+                    </Text>
+                    <Text className="mt-1 text-[11px] text-gray-500">
+                      Reçete No:{" "}
+                      <Text className="font-mono text-gray-900">
+                        {selectedOrder.prescription_no}
+                      </Text>
+                    </Text>
+                    <Text className="mt-1 text-[11px] text-gray-400">
+                      {new Date(selectedOrder.created_at).toLocaleString("tr-TR")}
+                    </Text>
+                  </View>
+                  {/* Ödeme bilgisi + iptal (ödeme yapılmadan) */}
+                  {Array.isArray(selectedOrder.payments) &&
+                    selectedOrder.payments[0]?.status === "awaiting_payment" &&
+                    (selectedOrder.status === "approved" ||
+                      selectedOrder.status === "courier_assigned") && (
+                      <View className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 mb-4">
+                        <View className="flex-row items-center justify-between">
+                          <Text className="text-xs font-semibold text-emerald-700">
+                            Ödemeniz Hazır
+                          </Text>
+                          <Text className="text-xs font-bold text-emerald-900 font-mono">
+                            {selectedOrder.payments[0].total_price.toFixed(2)}{" "}
+                            {selectedOrder.payments[0].currency || "TRY"}
+                          </Text>
+                        </View>
+                        <Text className="text-[11px] text-emerald-700/80 mt-1">
+                          İlaç: {selectedOrder.payments[0].medicine_price.toFixed(2)} • Teslimat:{" "}
+                          {selectedOrder.payments[0].delivery_fee.toFixed(2)} • Komisyon:{" "}
+                          {selectedOrder.payments[0].platform_commission_amount.toFixed(2)}
+                        </Text>
+
+                        <View className="flex-row gap-2 mt-3">
+                          <TouchableOpacity
+                            onPress={async () => {
+                              const pid = selectedOrder.payments?.[0]?.id;
+                              if (!pid) {
+                                Alert.alert("Hata", "Ödeme kaydı bulunamadı.");
+                                return;
+                              }
+                              closeOrderModal();
+                              router.push({
+                                pathname: "/(customer)/payment/[paymentId]",
+                                params: { paymentId: pid },
+                              });
+                            }}
+                            className="flex-1 rounded-xl bg-emerald-600 px-3 py-2.5 items-center"
+                          >
+                            <Text className="text-xs font-semibold text-emerald-50">
+                              Öde
+                            </Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() =>
+                              Alert.alert(
+                                "Siparişi iptal et",
+                                "Fiyatı beğenmediyseniz siparişi iptal edebilirsiniz. (Ödeme yapılmadıysa geçerlidir)",
+                                [
+                                  { text: "Vazgeç", style: "cancel" },
+                                  {
+                                    text: "İptal Et",
+                                    style: "destructive",
+                                    onPress: async () => {
+                                      try {
+                                        const { data } =
+                                          await supabase.auth.getSession();
+                                        const token = data.session?.access_token;
+                                        if (!token) {
+                                          Alert.alert(
+                                            "Hata",
+                                            "Oturum bilgisi alınamadı.",
+                                          );
+                                          return;
+                                        }
+
+                                        const baseUrl =
+                                          process.env.EXPO_PUBLIC_WEB_BASE_URL ??
+                                          "http://localhost:3000";
+                                        const res = await fetch(
+                                          `${baseUrl}/api/cancel-order`,
+                                          {
+                                            method: "POST",
+                                            headers: {
+                                              "Content-Type": "application/json",
+                                            },
+                                            body: JSON.stringify({
+                                              orderId: selectedOrder.id,
+                                              token,
+                                            }),
+                                          },
+                                        );
+                                        const r = await res.json();
+                                        if (!res.ok) {
+                                          throw new Error(
+                                            r?.error || "İptal edilemedi",
+                                          );
+                                        }
+
+                                        Alert.alert(
+                                          "İptal edildi",
+                                          "Siparişiniz iptal edildi.",
+                                        );
+                                        closeOrderModal();
+                                        void queryClient.invalidateQueries({
+                                          queryKey: [
+                                            "customer-active-orders",
+                                            user?.id,
+                                          ],
+                                        });
+                                      } catch (e) {
+                                        const msg =
+                                          e instanceof Error
+                                            ? e.message
+                                            : String(e);
+                                        Alert.alert("Hata", msg);
+                                      }
+                                    },
+                                  },
+                                ],
+                              )
+                            }
+                            className="flex-1 rounded-xl bg-rose-600 px-3 py-2.5 items-center"
+                          >
+                            <Text className="text-xs font-semibold text-white">
+                              Siparişi İptal Et
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    )}
+
                   {/* Teslimat kodu - belirgin şekilde */}
                   {selectedOrder.status === "in_transit" &&
                     selectedOrder.delivery_code && (

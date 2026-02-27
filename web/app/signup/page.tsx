@@ -32,6 +32,11 @@ export default function PharmacySignupPage() {
   const [neighborhood, setNeighborhood] = useState("");
   const [street, setStreet] = useState("");
   const [buildingNo, setBuildingNo] = useState("");
+  // iyzico submerchant için gerekli alanlar
+  const [contactName, setContactName] = useState("");
+  const [contactSurname, setContactSurname] = useState("");
+  const [identityNumber, setIdentityNumber] = useState("");
+  const [iban, setIban] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,12 +85,68 @@ export default function PharmacySignupPage() {
     }
   };
 
+  const createSubmerchant = async (
+    pharmacyId: string,
+    sessionToken: string
+  ): Promise<void> => {
+    // Adres bilgisini birleştir
+    const addressParts = [
+      street,
+      buildingNo,
+      neighborhood,
+      district,
+      city,
+    ].filter(Boolean);
+    const fullAddress = addressParts.join(", ");
+
+    if (!fullAddress || !contactName || !contactSurname || !identityNumber) {
+      throw new Error(
+        "Submerchant oluşturmak için adres, iletişim adı, soyadı ve TCKN gereklidir."
+      );
+    }
+
+    const response = await fetch("/api/create-submerchant", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        pharmacyId,
+        token: sessionToken,
+        name,
+        email: email.trim().toLowerCase(),
+        phone: phone || "",
+        address: fullAddress,
+        contactName,
+        contactSurname,
+        identityNumber,
+        iban: iban || undefined,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Submerchant oluşturulamadı");
+    }
+
+    return data;
+  };
+
   const handleSignup = async () => {
     setError(null);
     setSuccess(null);
 
     if (!name || !email || !password) {
       setError("İsim, email ve şifre zorunludur.");
+      return;
+    }
+
+    // Submerchant için gerekli alanlar
+    if (!contactName || !contactSurname || !identityNumber) {
+      setError(
+        "Ödeme entegrasyonu için iletişim adı, soyadı ve TCKN gereklidir."
+      );
       return;
     }
 
@@ -106,7 +167,8 @@ export default function PharmacySignupPage() {
       if (authData.user && authData.session) {
         const { lat, lng } = await geocodeAddress();
 
-        const { error: pharmacyError } = await (supabase as any)
+        // Eczane kaydını oluştur
+        const { data: pharmacyData, error: pharmacyError } = await (supabase as any)
           .from("pharmacies")
           .insert({
             user_id: authData.user.id,
@@ -120,10 +182,29 @@ export default function PharmacySignupPage() {
             building_no: buildingNo || null,
             latitude: lat,
             longitude: lng,
-          });
+          })
+          .select("id")
+          .single();
 
         if (pharmacyError) {
           throw pharmacyError;
+        }
+
+        // iyzico'da submerchant oluştur
+        try {
+          const session = await supabase.auth.getSession();
+          if (session.data.session) {
+            await createSubmerchant(
+              pharmacyData.id,
+              session.data.session.access_token
+            );
+          }
+        } catch (submerchantError) {
+          console.error("Submerchant oluşturma hatası:", submerchantError);
+          // Submerchant oluşturma hatası kritik değil, devam et
+          setError(
+            "Eczane kaydı oluşturuldu ancak ödeme entegrasyonu tamamlanamadı. Lütfen daha sonra panelden tamamlayın."
+          );
         }
 
         // Oturum zaten açık, panel sayfasına yönlendir
@@ -172,7 +253,8 @@ export default function PharmacySignupPage() {
 
       const { lat, lng } = await geocodeAddress();
 
-      const { error: pharmacyError } = await (supabase as any)
+      // Eczane kaydını oluştur
+      const { data: pharmacyData, error: pharmacyError } = await (supabase as any)
         .from("pharmacies")
         .insert({
           user_id: userId,
@@ -186,7 +268,9 @@ export default function PharmacySignupPage() {
           building_no: buildingNo || null,
           latitude: lat,
           longitude: lng,
-        });
+        })
+        .select("id")
+        .single();
 
       if (pharmacyError) {
         throw pharmacyError;
@@ -200,6 +284,20 @@ export default function PharmacySignupPage() {
 
       if (signInError) {
         throw signInError;
+      }
+
+      // Giriş yaptıktan sonra session token'ı al ve submerchant oluştur
+      const session = await supabase.auth.getSession();
+      if (session.data.session && contactName && contactSurname && identityNumber) {
+        try {
+          await createSubmerchant(
+            pharmacyData.id,
+            session.data.session.access_token
+          );
+        } catch (submerchantError) {
+          console.error("Submerchant oluşturma hatası:", submerchantError);
+          // Submerchant oluşturma hatası kritik değil, devam et
+        }
       }
 
       // Başarılı ise direkt panele gönder
@@ -401,6 +499,68 @@ export default function PharmacySignupPage() {
                 value={buildingNo}
                 onChange={(e) => setBuildingNo(e.target.value)}
               />
+            </div>
+
+            {/* iyzico submerchant için gerekli alanlar */}
+            <div className="sm:col-span-2 mt-2 pt-4 border-t border-slate-200">
+              <p className="text-xs font-semibold text-slate-700 mb-3">
+                Ödeme Entegrasyonu Bilgileri
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm mb-1 text-slate-700">
+                İletişim Adı <span className="text-red-500">*</span>
+              </label>
+              <input
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                placeholder="Ahmet"
+                value={contactName}
+                onChange={(e) => setContactName(e.target.value)}
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm mb-1 text-slate-700">
+                İletişim Soyadı <span className="text-red-500">*</span>
+              </label>
+              <input
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                placeholder="Yılmaz"
+                value={contactSurname}
+                onChange={(e) => setContactSurname(e.target.value)}
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm mb-1 text-slate-700">
+                TCKN <span className="text-red-500">*</span>
+              </label>
+              <input
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                placeholder="12345678901"
+                value={identityNumber}
+                onChange={(e) => setIdentityNumber(e.target.value.replace(/\D/g, ""))}
+                maxLength={11}
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm mb-1 text-slate-700">
+                IBAN <span className="text-xs text-slate-500">(Opsiyonel)</span>
+              </label>
+              <input
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                placeholder="TR00 0000 0000 0000 0000 0000 00"
+                value={iban}
+                onChange={(e) => setIban(e.target.value.toUpperCase().replace(/\s/g, ""))}
+              />
+              <p className="text-xs text-slate-500 mt-1">
+                Para transferi için gerekli, daha sonra eklenebilir
+              </p>
             </div>
           </div>
 

@@ -8,6 +8,7 @@ export default function CustomerLayout() {
       <Stack.Screen name="addresses" />
       <Stack.Screen name="order-by-barcode" />
       <Stack.Screen name="orders" />
+      <Stack.Screen name="payment/[paymentId]" />
       <Stack.Screen name="pharmacies" />
       <Stack.Screen name="pharmacies-map" />
       <Stack.Screen name="profile" />

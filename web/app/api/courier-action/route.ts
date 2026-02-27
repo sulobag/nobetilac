@@ -126,6 +126,20 @@ export async function POST(req: NextRequest) {
         );
       }
 
+      // Ödeme kontrolü: ödeme alınmadan kurye teslimata başlayamaz
+      const { data: payment } = await supabaseAdmin
+        .from("payments")
+        .select("status")
+        .eq("order_id", orderId)
+        .maybeSingle();
+
+      if (!payment || (payment as any).status !== "paid") {
+        return NextResponse.json(
+          { error: "Ödeme bekleniyor. Müşteri ödeme yapınca tekrar deneyin." },
+          { status: 400 },
+        );
+      }
+
       // 6 haneli teslimat doğrulama kodu üret
       const code = generateDeliveryCode();
 

@@ -21,6 +21,7 @@ import { ToastContainer, useToast } from "../../components/Toast";
 
 type OrderRow = {
   id: string;
+  order_no?: string | null;
   user_id: string;
   prescription_no: string;
   status: string;
@@ -37,6 +38,13 @@ type OrderRow = {
     street?: string | null;
     building_no?: string | null;
   } | null;
+  payments?:
+    | {
+        status: string;
+        total_price: number;
+        currency: string;
+      }[]
+    | null;
 };
 
 interface Props {
@@ -62,6 +70,7 @@ export default function OrdersView({ onSignOut }: Props) {
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [imageLightboxUrl, setImageLightboxUrl] = useState<string | null>(null);
+  const [medicinePriceInput, setMedicinePriceInput] = useState<string>("");
   const courierRetryTimers = useRef<Map<string, { timer: ReturnType<typeof setInterval>; count: number }>>(new Map());
   const { messages: toastMessages, addToast, dismissToast } = useToast();
 
@@ -155,6 +164,7 @@ export default function OrdersView({ onSignOut }: Props) {
         .select(
           `
             id,
+            order_no,
             user_id,
             prescription_no,
             prescription_image_path,
@@ -168,6 +178,11 @@ export default function OrdersView({ onSignOut }: Props) {
               neighborhood,
               street,
               building_no
+            ),
+            payments:payments!payments_order_id_fkey (
+              status,
+              total_price,
+              currency
             )
           `,
         )
@@ -304,6 +319,19 @@ export default function OrdersView({ onSignOut }: Props) {
               body: `Sipariş için kurye bulundu (${result.distance} km).`,
               type: "success",
             });
+            // Kurye atandıktan sonra müşteriye "Ödemeniz hazır" bildirimi gönder
+            try {
+              const currentToken = accessToken;
+              if (currentToken) {
+                await fetch("/api/send-payment-ready-push", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ orderId, token: currentToken }),
+                });
+              }
+            } catch {
+              // sessizce devam
+            }
             const entry = courierRetryTimers.current.get(orderId);
             if (entry) clearInterval(entry.timer);
             courierRetryTimers.current.delete(orderId);
@@ -450,6 +478,53 @@ export default function OrdersView({ onSignOut }: Props) {
       ? orders.find((o: OrderRow) => o.id === selectedOrderId) ?? null
       : null;
 
+  const DELIVERY_FEE_TL = 120;
+  const PLATFORM_COMMISSION_RATE = 0.12;
+  const parsedMedicinePrice = Number((medicinePriceInput || "").replace(",", "."));
+  const basePrice =
+    Number.isFinite(parsedMedicinePrice) && parsedMedicinePrice > 0
+      ? parsedMedicinePrice + DELIVERY_FEE_TL
+      : null;
+  const commissionAmount =
+    basePrice != null
+      ? Math.round(basePrice * PLATFORM_COMMISSION_RATE * 100) / 100
+      : null;
+  const totalAmount =
+    basePrice != null && commissionAmount != null
+      ? Math.round((basePrice + commissionAmount) * 100) / 100
+      : null;
+
+  const setOrderPricingAndAssignCourier = async (orderId: string) => {
+    if (!accessToken) throw new Error("Oturum token alınamadı.");
+    if (!Number.isFinite(parsedMedicinePrice) || parsedMedicinePrice <= 0) {
+      throw new Error("Lütfen geçerli bir ilaç ücreti girin.");
+    }
+
+    const res = await fetch("/api/set-order-pricing", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        orderId,
+        token: accessToken,
+        medicinePrice: parsedMedicinePrice,
+      }),
+    });
+
+    const result = await res.json();
+    if (!res.ok) {
+      throw new Error(result?.error || "Fiyatlandırma kaydedilemedi");
+    }
+
+    addToast({
+      title: "Fiyatlandırma Kaydedildi",
+      body: `Toplam tutar: ${result?.pricing?.total ?? totalAmount ?? "-"} TL`,
+      type: "success",
+    });
+
+    startCourierAssignment(orderId, accessToken);
+    void queryClient.invalidateQueries({ queryKey: ["pharmacy-orders"] });
+  };
+
   const formatAddress = (addr: OrderRow["addresses"]) => {
     if (!addr) return "-";
     return (
@@ -485,6 +560,47 @@ export default function OrdersView({ onSignOut }: Props) {
         {label}
       </span>
     );
+  };
+
+  const paymentStatusInfo = (order: OrderRow) => {
+    const arr = order.payments;
+    const p = Array.isArray(arr) ? arr[0] : null;
+    if (!p) {
+      return { label: "Ödeme oluşturulmadı", tone: "text-slate-500", total: null as number | null, currency: "" };
+    }
+    let label = "Ödeme oluşturulmadı";
+    let tone = "text-slate-600";
+    switch (p.status) {
+      case "awaiting_payment":
+        label = "Kullanıcı ödemesi bekleniyor";
+        tone = "text-amber-700";
+        break;
+      case "paid":
+        label = "Ödeme alındı";
+        tone = "text-emerald-700";
+        break;
+      case "failed":
+        label = "Ödeme başarısız";
+        tone = "text-rose-700";
+        break;
+      case "cancelled":
+        label = "Ödeme iptal edildi";
+        tone = "text-slate-700";
+        break;
+      case "refunded":
+        label = "İade edildi";
+        tone = "text-sky-700";
+        break;
+      default:
+        label = "Ödeme oluşturulmadı";
+        tone = "text-slate-600";
+    }
+    return {
+      label,
+      tone,
+      total: typeof p.total_price === "number" ? p.total_price : null,
+      currency: p.currency || "TRY",
+    };
   };
 
   const inlineStatus = (status: string) => {
@@ -673,11 +789,14 @@ export default function OrdersView({ onSignOut }: Props) {
                       </button>
                       <button
                         type="button"
-                        onClick={() => updateStatus(order.id, "approved")}
+                      onClick={() => {
+                        setSelectedOrderId(order.id);
+                        setMedicinePriceInput("");
+                      }}
                         disabled={updatingId === order.id || order.status !== "pending"}
                         className="flex-1 py-2.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 transition-colors disabled:opacity-50"
                       >
-                        Onayla
+                      Fiyatlandır
                       </button>
                     </div>
                   </div>
@@ -882,6 +1001,12 @@ export default function OrdersView({ onSignOut }: Props) {
                 </h2>
                 <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
                   <span className="inline-flex items-center gap-1 px-2 sm:px-3 py-1 rounded-md font-mono text-[11px] sm:text-[12px] bg-slate-100 text-slate-900 border border-slate-200">
+                    <span className="font-semibold">Sipariş:</span>
+                    <span className="truncate max-w-[120px] sm:max-w-none">
+                      {selectedOrder.order_no || selectedOrder.id.slice(0, 8)}
+                    </span>
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2 sm:px-3 py-1 rounded-md font-mono text-[11px] sm:text-[12px] bg-slate-50 text-slate-900 border border-slate-200">
                     <span className="font-semibold">Reçete:</span>
                     <span className="truncate max-w-[120px] sm:max-w-none">
                       {selectedOrder.prescription_no}
@@ -904,6 +1029,85 @@ export default function OrdersView({ onSignOut }: Props) {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-sm mb-5">
+              {/* Fiyatlandırma (pending siparişlerde) */}
+              {selectedOrder.status === "pending" && (
+                <div className="sm:col-span-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 sm:px-4 py-3">
+                  <p className="text-[11px] uppercase tracking-wide mb-2 text-emerald-700 font-semibold">
+                    Fiyatlandırma
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-slate-600 mb-1">
+                        İlaç Bedeli (TL)
+                      </label>
+                      <input
+                        value={medicinePriceInput}
+                        onChange={(e) => setMedicinePriceInput(e.target.value)}
+                        placeholder="Örn: 350"
+                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+                        inputMode="decimal"
+                      />
+                      <p className="mt-1 text-[11px] text-slate-500">
+                        Teslimat: {DELIVERY_FEE_TL} TL • Komisyon: %{(PLATFORM_COMMISSION_RATE * 100).toFixed(0)}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-emerald-200 bg-white px-3 py-2">
+                      <p className="text-xs text-slate-600">Özet</p>
+                      <div className="mt-1 text-[12px] text-slate-700 space-y-0.5">
+                        <div className="flex justify-between">
+                          <span>İlaç</span>
+                          <span className="font-mono">
+                            {Number.isFinite(parsedMedicinePrice) && parsedMedicinePrice > 0
+                              ? `${parsedMedicinePrice.toFixed(2)} TL`
+                              : "-"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Teslimat</span>
+                          <span className="font-mono">{DELIVERY_FEE_TL.toFixed(2)} TL</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Platform Komisyonu</span>
+                          <span className="font-mono">
+                            {commissionAmount != null ? `${commissionAmount.toFixed(2)} TL` : "-"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between pt-1 border-t border-slate-100">
+                          <span className="font-semibold">Toplam</span>
+                          <span className="font-mono font-semibold">
+                            {totalAmount != null ? `${totalAmount.toFixed(2)} TL` : "-"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+                    <p className="text-[11px] text-emerald-800/80">
+                      Kaydedince ödeme kaydı oluşur, sipariş kurye aramaya geçer.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          setUpdatingId(selectedOrder.id);
+                          setError(null);
+                          await setOrderPricingAndAssignCourier(selectedOrder.id);
+                        } catch (e: unknown) {
+                          const msg = e instanceof Error ? e.message : "Bir hata oluştu";
+                          setError(msg);
+                        } finally {
+                          setUpdatingId(null);
+                        }
+                      }}
+                      disabled={updatingId === selectedOrder.id}
+                      className="px-4 py-2 text-xs rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold disabled:opacity-50"
+                    >
+                      {updatingId === selectedOrder.id ? "Kaydediliyor..." : "Fiyatı Kaydet & Kurye Ara"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 sm:px-4 py-3">
                 <p className="text-[11px] uppercase tracking-wide mb-1 text-slate-500">
                   Hasta Bilgileri
@@ -921,16 +1125,26 @@ export default function OrdersView({ onSignOut }: Props) {
 
               <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 sm:px-4 py-3">
                 <p className="text-[11px] uppercase tracking-wide mb-1 text-slate-500">
-                  Reçete / Not
+                  Ödeme Durumu
                 </p>
-                <p className="font-mono text-[13px] text-slate-900 break-all">
-                  {selectedOrder.prescription_no || "-"}
-                </p>
-                <p className="mt-2 text-xs text-slate-600">
-                  {selectedOrder.note
-                    ? `Not: ${selectedOrder.note}`
-                    : "Herhangi bir not eklenmemiş."}
-                </p>
+                {(() => {
+                  const info = paymentStatusInfo(selectedOrder);
+                  return (
+                    <>
+                      <p className={`text-xs font-semibold ${info.tone}`}>
+                        {info.label}
+                      </p>
+                      {info.total != null && (
+                        <p className="mt-1 text-xs text-slate-700">
+                          Toplam:{" "}
+                          <span className="font-mono">
+                            {info.total.toFixed(2)} {info.currency}
+                          </span>
+                        </p>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
 
               <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 sm:px-4 py-3">
@@ -980,9 +1194,11 @@ export default function OrdersView({ onSignOut }: Props) {
               </div>
             </div>
 
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <p className="text-xs text-slate-500">
-                Bu ekrandan siparişi onaylayabilir veya reddedebilirsiniz.
+                {selectedOrder.status === "pending"
+                  ? "Fiyatlandırma sonrası kurye ataması başlayacak."
+                  : "Bu ekrandan siparişi reddedebilirsiniz."}
               </p>
               <div className="flex items-center gap-2">
                 <button
@@ -994,16 +1210,6 @@ export default function OrdersView({ onSignOut }: Props) {
                   className="flex-1 sm:flex-initial px-4 py-2 text-xs rounded-lg bg-rose-500 hover:bg-rose-400 text-white font-semibold disabled:opacity-50"
                 >
                   Reddet
-                </button>
-                <button
-                  onClick={() => updateStatus(selectedOrder.id, "approved")}
-                    disabled={
-                      updatingId === selectedOrder.id ||
-                      selectedOrder.status !== "pending"
-                    }
-                  className="flex-1 sm:flex-initial px-4 py-2 text-xs rounded-lg bg-emerald-500 hover:bg-emerald-400 text-white font-semibold disabled:opacity-50"
-                >
-                  Onayla
                 </button>
               </div>
             </div>

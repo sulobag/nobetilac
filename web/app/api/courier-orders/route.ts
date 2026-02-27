@@ -55,6 +55,7 @@ export async function GET(req: NextRequest) {
       .select(
         `
         id, status, prescription_no, note, created_at, user_id,
+        payments:payments!payments_order_id_fkey ( status ),
         pharmacies:pharmacy_id ( name, city, district, phone, street, building_no ),
         addresses:address_id ( formatted_address, city, district, neighborhood, street, building_no )
       `,
@@ -104,6 +105,9 @@ export async function GET(req: NextRequest) {
         ? {
             ...activeOrder,
             customer: customerInfo,
+            payment_status: Array.isArray((activeOrder as any).payments)
+              ? (activeOrder as any).payments?.[0]?.status ?? null
+              : (activeOrder as any).payments?.status ?? null,
           }
         : null,
       todayDelivered: todayDelivered || 0,

@@ -13,11 +13,13 @@ import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { smartGeocode } from "@/utils/geocoding";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function AddAddress() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { user, checkUserAddresses } = useAuth();
+  const queryClient = useQueryClient();
 
   const isFirstAddress = params.firstAddress === "true";
 
@@ -130,6 +132,10 @@ export default function AddAddress() {
     } else {
       // Auth context içindeki hasAddress bilgisini güncelle
       await checkUserAddresses();
+      // Adres listelerini canlı güncelle
+      void queryClient.invalidateQueries({
+        queryKey: ["customer-addresses", user.id],
+      });
 
       if (!finalLatitude || !finalLongitude) {
         Alert.alert(

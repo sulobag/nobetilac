@@ -12,6 +12,7 @@ import React, { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { Database } from "@/types/database.types";
+import { useFocusEffect } from "@react-navigation/native";
 
 type Address = Database["public"]["Tables"]["addresses"]["Row"];
 
@@ -62,6 +63,14 @@ export default function Addresses() {
   useEffect(() => {
     fetchAddresses();
   }, [fetchAddresses]);
+
+  // Bu ekran geri odaklandığında yeniden çek (adres ekledikten sonra canlı güncellensin)
+  useFocusEffect(
+    React.useCallback(() => {
+      void fetchAddresses();
+      return () => {};
+    }, [fetchAddresses]),
+  );
 
   const handleRefresh = () => {
     setRefreshing(true);
