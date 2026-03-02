@@ -10,9 +10,6 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "config": {
-        "googleMapsApiKey": "AIzaSyD43zjP2TDfdyQEw6SvSMWXrGc1rdTJNRs"
-      },
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Konumunuzu teslimat adresi için kullanmak istiyoruz.",
         "NSLocationAlwaysUsageDescription": "Aktif teslimatlarınızı takip etmek için konumunuza ihtiyacımız var."
